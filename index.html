@@ -135,6 +135,134 @@
         .map-marker-red {
             filter: hue-rotate(140deg) saturate(1.5);
         }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .mobile-bottom-nav {
+                display: flex !important;
+            }
+
+            main {
+                padding-bottom: 100px !important;
+                /* Space for bottom nav */
+            }
+
+            .header-title {
+                font-size: 1.25rem !important;
+            }
+
+            .p-8 {
+                padding: 1.25rem !important;
+            }
+
+            .grid {
+                gap: 1rem !important;
+            }
+
+            #modal-content {
+                max-height: 100vh;
+                border-radius: 0;
+                width: 100% !important;
+                margin: 0;
+                bottom: 0px !important;
+                position: fixed;
+                border-top-left-radius: 32px;
+                border-top-right-radius: 32px;
+            }
+
+            #modal-container {
+                padding: 0;
+                align-items: flex-end;
+            }
+
+            .listing-card-img {
+                height: 180px !important;
+            }
+
+            .dashboard-card {
+                padding: 1.25rem !important;
+                gap: 1rem !important;
+            }
+
+            .dashboard-card i {
+                font-size: 1.5rem !important;
+                width: 3.5rem !important;
+                height: 3.5rem !important;
+            }
+
+            .toast {
+                left: 20px;
+                right: 20px;
+                transform: translateY(150%);
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+
+            #toast-container {
+                top: auto;
+                bottom: 24px;
+                right: 0;
+                left: 0;
+                padding: 0 20px;
+            }
+        }
+
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            height: 72px;
+            background: rgba(255, 255, 255, 0.82) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 36px !important;
+            z-index: 1000 !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 16px;
+        }
+
+        .mobile-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            transition: all 0.3s;
+            gap: 4px;
+            flex: 1;
+            height: 100%;
+        }
+
+        .mobile-nav-btn.active {
+            color: #2563eb;
+        }
+
+        .mobile-nav-btn i {
+            font-size: 1.25rem;
+        }
+
+        .mobile-nav-btn span {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scroll-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 
@@ -213,12 +341,14 @@
                     <button onclick="toggleSidebar()"
                         class="md:hidden w-10 h-10 flex items-center justify-center text-slate-500"><i
                             class="fa-solid fa-bars-staggered text-xl"></i></button>
-                    <h2 id="page-title" class="text-2xl font-black text-slate-900">Dashboard</h2>
+                    <h2 id="page-title" class="text-2xl font-black text-slate-900 header-title">Dashboard</h2>
                 </div>
                 <div id="header-actions"></div>
             </header>
-            <div id="main-content" class="flex-1 overflow-y-auto p-8 relative"></div>
+            <div id="main-content" class="flex-1 overflow-y-auto p-8 relative scroll-hide"></div>
         </main>
+        <!-- Bottom Nav for Mobile -->
+        <nav id="mobile-nav" class="mobile-bottom-nav"></nav>
     </div>
 
     <!-- Modals -->
@@ -328,8 +458,14 @@
         const navigate = (id) => {
             curPage = id;
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-blue-50', 'text-blue-600', 'font-black'));
+            document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+
             document.getElementById('nav-' + id)?.classList.add('bg-blue-50', 'text-blue-600', 'font-black');
-            document.getElementById('page-title').innerText = pages[currentUser.role].find(p => p.id === id).label;
+            document.getElementById('mobile-nav-' + id)?.classList.add('active');
+
+            const page = pages[currentUser.role].find(p => p.id === id);
+            document.getElementById('page-title').innerText = page ? page.label : 'Dashboard';
+
             render(id);
             if (window.innerWidth < 768) toggleSidebar(false);
         };
@@ -368,15 +504,15 @@
             const mCount = users.filter(u => u.role === 'makler').length;
             con.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6">
+                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6 dashboard-card">
                         <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl"><i class="fa-solid fa-house"></i></div>
                         <div><p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Sotuvda</p><h3 class="text-4xl font-black">${activeCount}</h3></div>
                     </div>
-                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6">
+                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6 dashboard-card">
                         <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl"><i class="fa-solid fa-check-double"></i></div>
                         <div><p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Sotilgan</p><h3 class="text-4xl font-black">${soldCount}</h3></div>
                     </div>
-                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6">
+                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6 dashboard-card">
                         <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-3xl"><i class="fa-solid fa-users"></i></div>
                         <div><p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Maklerlar</p><h3 class="text-4xl font-black">${mCount}</h3></div>
                     </div>
@@ -446,7 +582,7 @@
             con.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 ${data.map(item => `
                     <div class="bg-white rounded-[32px] overflow-hidden soft-shadow border border-slate-50 group flex flex-col">
-                        <div class="relative h-56 bg-white overflow-hidden">
+                        <div class="relative h-56 bg-white overflow-hidden listing-card-img">
                             ${item.images?.length > 0 ? `<img src="${item.images[0]}" class="w-full h-full object-contain aspect-auto-img group-hover:scale-105 transition-transform duration-500">` : `<div class="w-full h-full flex items-center justify-center text-slate-300 text-4xl"><i class="fa-solid fa-image"></i></div>`}
                             <div class="absolute top-4 left-4 flex gap-2">
                                 <span class="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-slate-900">${item.category}</span>
@@ -587,7 +723,7 @@
         const openMaklerModal = (id = null) => {
             const m = id ? users.find(u => u.id === id) : null;
             showModal(`
-                <div class="p-10">
+                <div class="p-6 md:p-10">
                     <h3 class="text-2xl font-black mb-8">${id ? 'Tahrirlash' : 'Yangi makler'}</h3>
                     <form onsubmit="handleUserSave(event, '${id || ''}')" class="space-y-6">
                         <div class="grid grid-cols-2 gap-6">
@@ -628,7 +764,7 @@
             uploadImgs = l ? [...(l.images || [])] : [];
 
             showModal(`
-                <div class="p-10 flex-1 overflow-y-auto">
+                <div class="p-6 md:p-10 flex-1 overflow-y-auto">
                     <h3 class="text-2xl font-black mb-10">${id ? 'Tahrirlash' : 'Yangi e\'lon'}</h3>
                     <div class="space-y-8">
                         <div class="flex gap-4">
@@ -776,7 +912,7 @@
             window.closeModal(); // Small delay to ensure clean transition
             setTimeout(() => {
                 showModal(`
-                    <div class="p-10">
+                    <div class="p-6 md:p-10">
                         <div class="flex gap-4 overflow-x-auto pb-4 mb-8 scroll-hide">
                             ${itm.images?.length > 0 ? itm.images.map(img => `
                                 <div class="h-80 min-w-[300px] md:min-w-[500px] bg-slate-900 rounded-[32px] overflow-hidden flex-shrink-0">
@@ -831,13 +967,22 @@
             document.getElementById('user-avatar-text').innerText = currentUser.name[0];
 
             const nav = document.getElementById('nav-links');
-            nav.innerHTML = pages[currentUser.role].map(p => `
+            const mobileNav = document.getElementById('mobile-nav');
+            const navItems = pages[currentUser.role];
+
+            nav.innerHTML = navItems.map(p => `
                 <button onclick="navigate('${p.id}')" id="nav-${p.id}" class="nav-btn w-full h-14 flex items-center gap-4 px-6 rounded-2xl text-slate-500 transition-all font-bold">
                     <i class="fa-solid ${p.icon} w-6 text-center"></i> <span>${p.label}</span>
                 </button>
             `).join('');
 
-            navigate(pages[currentUser.role][0].id);
+            mobileNav.innerHTML = navItems.slice(0, 4).map(p => `
+                <button onclick="navigate('${p.id}')" id="mobile-nav-${p.id}" class="mobile-nav-btn">
+                    <i class="fa-solid ${p.icon}"></i> <span>${p.label}</span>
+                </button>
+            `).join('');
+
+            navigate(navItems[0].id);
         };
 
         window.onload = init;
