@@ -19,7 +19,10 @@
             padding: 0;
             display: flex;
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
 
         ::-webkit-scrollbar {
@@ -143,16 +146,22 @@
             }
 
             main {
-                padding-bottom: 100px !important;
-                /* Space for bottom nav */
+                padding-bottom: 0 !important;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            #main-content {
+                padding-bottom: 140px !important;
+                -webkit-overflow-scrolling: touch;
             }
 
             .header-title {
-                font-size: 1.25rem !important;
+                font-size: 1.1rem !important;
             }
 
             .p-8 {
-                padding: 1.25rem !important;
+                padding: 1rem !important;
             }
 
             .grid {
@@ -160,7 +169,8 @@
             }
 
             #modal-content {
-                max-height: 100vh;
+                max-height: 85vh;
+                max-height: 85dvh;
                 border-radius: 0;
                 width: 100% !important;
                 margin: 0;
@@ -168,6 +178,7 @@
                 position: fixed;
                 border-top-left-radius: 32px;
                 border-top-right-radius: 32px;
+                box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.1);
             }
 
             #modal-container {
@@ -176,24 +187,25 @@
             }
 
             .listing-card-img {
-                height: 180px !important;
+                height: 160px !important;
             }
 
             .dashboard-card {
-                padding: 1.25rem !important;
-                gap: 1rem !important;
+                padding: 1rem !important;
+                gap: 0.75rem !important;
             }
 
             .dashboard-card i {
-                font-size: 1.5rem !important;
-                width: 3.5rem !important;
-                height: 3.5rem !important;
+                font-size: 1.25rem !important;
+                width: 3rem !important;
+                height: 3rem !important;
             }
 
             .toast {
-                left: 20px;
-                right: 20px;
-                transform: translateY(150%);
+                left: 16px;
+                right: 16px;
+                bottom: 100px;
+                transform: translateY(200%);
             }
 
             .toast.show {
@@ -202,10 +214,30 @@
 
             #toast-container {
                 top: auto;
-                bottom: 24px;
+                bottom: 0;
                 right: 0;
                 left: 0;
-                padding: 0 20px;
+                padding: 0 16px;
+                z-index: 10001;
+            }
+
+            #main-content {
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+            }
+
+            #main-content::-webkit-scrollbar {
+                display: none !important;
+            }
+
+            #login-screen {
+                overflow-y: auto;
+                align-items: center;
+            }
+
+            #login-screen>div {
+                margin: auto;
+                max-width: 90%;
             }
         }
 
@@ -255,13 +287,11 @@
             letter-spacing: 0.5px;
         }
 
-        .scroll-hide::-webkit-scrollbar {
-            display: none;
-        }
-
         .scroll-hide {
             -ms-overflow-style: none;
+            /* IE and Edge */
             scrollbar-width: none;
+            /* Firefox */
         }
     </style>
 </head>
@@ -302,7 +332,7 @@
     </div>
 
     <!-- App Container -->
-    <div id="app" class="hidden w-full h-full flex flex-col md:flex-row overflow-hidden">
+    <div id="app" class="hidden w-full h-full flex flex-col md:flex-row overflow-hidden relative">
         <!-- Sidebar -->
         <aside id="sidebar"
             class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-100 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:relative flex flex-col">
@@ -466,6 +496,12 @@
             const page = pages[currentUser.role].find(p => p.id === id);
             document.getElementById('page-title').innerText = page ? page.label : 'Dashboard';
 
+            // Reset map variables when navigating away from map to ensure fresh init
+            if (id !== 'map') {
+                mapInstance = null;
+                currentLayer = null;
+            }
+
             render(id);
             if (window.innerWidth < 768) toggleSidebar(false);
         };
@@ -474,6 +510,11 @@
             const s = document.getElementById('sidebar');
             if (v === undefined) s.classList.toggle('-translate-x-full');
             else v ? s.classList.remove('-translate-x-full') : s.classList.add('-translate-x-full');
+
+            // Re-render map if it exists to fix sizing issues after sidebar toggle
+            if (curPage === 'map' && mapInstance) {
+                setTimeout(() => mapInstance.invalidateSize(), 300);
+            }
         };
 
         // Renderers
@@ -579,10 +620,10 @@
                 return;
             }
 
-            con.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            con.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
                 ${data.map(item => `
-                    <div class="bg-white rounded-[32px] overflow-hidden soft-shadow border border-slate-50 group flex flex-col">
-                        <div class="relative h-56 bg-white overflow-hidden listing-card-img">
+                    <div class="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden soft-shadow border border-slate-50 group flex flex-col">
+                        <div class="relative h-40 md:h-56 bg-white overflow-hidden listing-card-img">
                             ${item.images?.length > 0 ? `<img src="${item.images[0]}" class="w-full h-full object-contain aspect-auto-img group-hover:scale-105 transition-transform duration-500">` : `<div class="w-full h-full flex items-center justify-center text-slate-300 text-4xl"><i class="fa-solid fa-image"></i></div>`}
                             <div class="absolute top-4 left-4 flex gap-2">
                                 <span class="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-slate-900">${item.category}</span>
@@ -590,22 +631,22 @@
                             </div>
                             ${isArchive ? `<div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center text-white font-black text-xl uppercase tracking-widest backdrop-blur-sm">Sotilgan</div>` : ''}
                         </div>
-                        <div class="p-6 flex-1 flex flex-col">
-                            <h4 class="font-black text-slate-900 text-lg mb-2 line-clamp-1">${item.addressText || 'Manzil ko\'rsatilmagan'}</h4>
-                            <div class="flex gap-4 text-xs font-bold text-slate-400 mb-6">
-                                <span><i class="fa-solid fa-door-open mr-1"></i> ${item.rooms} xona</span>
-                                <span><i class="fa-solid fa-expand mr-1"></i> ${item.area} m²</span>
+                        <div class="p-3 md:p-6 flex-1 flex flex-col">
+                            <h4 class="font-black text-slate-900 text-sm md:text-lg mb-1 md:mb-2 line-clamp-1">${item.addressText || 'Manzil ko\'rsatilmagan'}</h4>
+                            <div class="flex flex-wrap gap-2 md:gap-4 text-[10px] md:text-xs font-bold text-slate-400 mb-3 md:mb-6">
+                                <span><i class="fa-solid fa-door-open mr-0.5"></i> ${item.rooms} xona</span>
+                                <span><i class="fa-solid fa-expand mr-0.5"></i> ${item.area} m²</span>
                             </div>
-                            <div class="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
-                                <div class="font-black text-xl text-blue-600">${money(item.price, item.currency)}</div>
-                                <div class="flex gap-2">
-                                    <button onclick="viewDetail('${item.id}', ${isArchive})" title="Ko'rish" class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white transition-all"><i class="fa-solid fa-eye"></i></button>
+                            <div class="mt-auto pt-3 md:pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div class="font-black text-base md:text-xl text-blue-600">${money(item.price, item.currency)}</div>
+                                <div class="flex gap-1.5 md:gap-2 w-full sm:w-auto">
+                                    <button onclick="viewDetail('${item.id}', ${isArchive})" title="Ko'rish" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white transition-all"><i class="fa-solid fa-eye text-sm"></i></button>
                                     ${!isArchive ? `
-                                        ${(currentUser.role === 'admin' || item.maklerId === currentUser.id) ? `<button onclick="openListingModal('${item.id}')" title="Tahrirlash" class="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white transition-all"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
-                                        <button onclick="window.requestSold('${item.id}')" title="Sotildi" class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 hover:bg-emerald-600 hover:text-white transition-all"><i class="fa-solid fa-dollar-sign"></i></button>
-                                        ${(currentUser.role === 'admin' || item.maklerId === currentUser.id) ? `<button onclick="deleteListing('${item.id}')" title="O'chirish" class="w-10 h-10 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                        ${(currentUser.role === 'admin' || item.maklerId === currentUser.id) ? `<button onclick="openListingModal('${item.id}')" title="Tahrirlash" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white transition-all"><i class="fa-solid fa-pen-to-square text-sm"></i></button>` : ''}
+                                        <button onclick="window.requestSold('${item.id}')" title="Sotildi" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-emerald-50 text-emerald-500 hover:bg-emerald-600 hover:text-white transition-all"><i class="fa-solid fa-dollar-sign text-sm"></i></button>
+                                        ${(currentUser.role === 'admin' || item.maklerId === currentUser.id) ? `<button onclick="deleteListing('${item.id}')" title="O'chirish" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash text-sm"></i></button>` : ''}
                                     ` : `
-                                        ${currentUser.role === 'admin' ? `<button onclick="deleteListing('${item.id}')" title="O'chirish" class="w-10 h-10 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                        ${currentUser.role === 'admin' ? `<button onclick="deleteListing('${item.id}')" title="O'chirish" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash text-sm"></i></button>` : ''}
                                     `}
                                 </div>
                             </div>
@@ -672,44 +713,116 @@
         };
 
         const renderMap = (con) => {
-            con.innerHTML = `<div class="bg-white rounded-[40px] soft-shadow p-2 border border-slate-50 h-[70vh]"><div id="main-map" class="w-full h-full rounded-[38px] overflow-hidden"></div></div>`;
+            con.innerHTML = `
+                <div class="flex flex-col h-full gap-4">
+                    <div class="bg-white p-4 rounded-3xl border border-slate-50 flex flex-wrap gap-3 items-end soft-shadow transition-all duration-300">
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Qidirish</label>
+                            <input type="text" id="m-f-search" oninput="applyMapFilters()" placeholder="Manzil..." class="w-full h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Turi</label>
+                            <select id="m-f-cat" onchange="applyMapFilters()" class="h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                                <option value="">Hammasi</option>
+                                <option value="Sotuv">Sotuv</option>
+                                <option value="Ijara">Ijara</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Shakl</label>
+                            <select id="m-f-type" onchange="applyMapFilters()" class="h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                                <option value="">Hammasi</option>
+                                <option value="Dom">Dom</option>
+                                <option value="Hovli">Hovli</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Holat</label>
+                            <select id="m-f-status" onchange="applyMapFilters()" class="h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                                <option value="active">Sotuvdagilar</option>
+                                <option value="sold">Sotilganlar</option>
+                                <option value="all">Barchasi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-[32px] soft-shadow p-1.5 border border-slate-50 flex-1 relative overflow-hidden min-h-[400px]">
+                        <div id="main-map" class="w-full h-full rounded-[28px] z-0"></div>
+                    </div>
+                </div>`;
+
             setTimeout(() => {
-                const mapEl = document.getElementById('main-map');
-                if (!mapEl) return;
-                const map = L.map('main-map').setView(mapFocus ? [mapFocus.lat, mapFocus.lng] : [40.103, 65.373], mapFocus ? 17 : 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                applyMapFilters();
+            }, 100);
+        };
+
+        let currentLayer = null;
+        let mapInstance = null;
+
+        const applyMapFilters = () => {
+            const mapEl = document.getElementById('main-map');
+            if (!mapEl) return;
+
+            const search = document.getElementById('m-f-search').value.toLowerCase();
+            const cat = document.getElementById('m-f-cat').value;
+            const type = document.getElementById('m-f-type').value;
+            const status = document.getElementById('m-f-status').value;
+
+            if (!mapInstance) {
+                mapInstance = L.map('main-map').setView(mapFocus ? [mapFocus.lat, mapFocus.lng] : [40.103, 65.373], mapFocus ? 17 : 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
                 if (mapFocus) {
-                    L.popup().setLatLng([mapFocus.lat, mapFocus.lng]).setContent(`<div class="p-2"><h4 class="font-black text-sm mb-1">${mapFocus.label}</h4></div>`).openOn(map);
+                    L.popup().setLatLng([mapFocus.lat, mapFocus.lng]).setContent(`<div class="p-2"><h4 class="font-black text-sm mb-1">${mapFocus.label}</h4></div>`).openOn(mapInstance);
                     mapFocus = null;
                 }
-                listings.forEach(l => {
-                    const m = L.marker([l.loc.lat, l.loc.lng]).addTo(map);
-                    m.bindPopup(`
-                        <div class="p-2 min-w-[200px]">
-                            <h4 class="font-black text-sm mb-1">${l.addressText || 'Manzil yo\'q'}</h4>
-                            <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">${l.type || 'Hovli'} / ${l.category}</div>
-                            <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
-                                <span class="text-blue-600 font-bold">${money(l.price, l.currency)}</span>
-                                <button onclick="window.viewDetail('${l.id}', false)" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-md font-bold">Batafsil</button>
-                            </div>
+            }
+
+            if (currentLayer) mapInstance.removeLayer(currentLayer);
+            currentLayer = L.layerGroup().addTo(mapInstance);
+
+            // Filter listings
+            const filteredListings = status === 'sold' ? [] : listings.filter(l => {
+                const matchSearch = (l.addressText || '').toLowerCase().includes(search);
+                const matchCat = !cat || l.category === cat;
+                const matchType = !type || l.type === type;
+                return matchSearch && matchCat && matchType;
+            });
+
+            // Filter archive
+            const filteredArchive = status === 'active' ? [] : archive.filter(l => {
+                const matchSearch = (l.addressText || '').toLowerCase().includes(search);
+                const matchCat = !cat || l.category === cat;
+                const matchType = !type || l.type === type;
+                return matchSearch && matchCat && matchType;
+            });
+
+            filteredListings.forEach(l => {
+                const m = L.marker([l.loc.lat, l.loc.lng]).addTo(currentLayer);
+                m.bindPopup(`
+                    <div class="p-2 min-w-[200px]">
+                        <h4 class="font-black text-sm mb-1">${l.addressText || 'Manzil yo\'q'}</h4>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">${l.type || 'Hovli'} / ${l.category}</div>
+                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+                            <span class="text-blue-600 font-bold">${money(l.price, l.currency)}</span>
+                            <button onclick="window.viewDetail('${l.id}', false)" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-md font-bold">Batafsil</button>
                         </div>
-                    `);
-                });
-                const redIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
-                archive.forEach(l => {
-                    const m = L.marker([l.loc.lat, l.loc.lng], { icon: redIcon }).addTo(map);
-                    m.bindPopup(`
-                        <div class="p-2 min-w-[200px]">
-                            <h4 class="font-black text-sm mb-1">${l.addressText}</h4>
-                            <div class="text-red-500 font-bold mb-2 text-[10px]">${l.type || 'Hovli'} - SOTILGAN</div>
-                            <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
-                                <span class="text-slate-600 font-bold">${money(l.price, l.currency)}</span>
-                                <button onclick="window.viewDetail('${l.id}', true)" class="bg-slate-800 text-white text-[10px] px-3 py-1 rounded-md font-bold">Batafsil</button>
-                            </div>
+                    </div>
+                `);
+            });
+
+            const redIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
+            filteredArchive.forEach(l => {
+                const m = L.marker([l.loc.lat, l.loc.lng], { icon: redIcon }).addTo(currentLayer);
+                m.bindPopup(`
+                    <div class="p-2 min-w-[200px]">
+                        <h4 class="font-black text-sm mb-1">${l.addressText}</h4>
+                        <div class="text-red-500 font-bold mb-2 text-[10px]">${l.type || 'Hovli'} - SOTILGAN</div>
+                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+                            <span class="text-slate-600 font-bold">${money(l.price, l.currency)}</span>
+                            <button onclick="window.viewDetail('${l.id}', true)" class="bg-slate-800 text-white text-[10px] px-3 py-1 rounded-md font-bold">Batafsil</button>
                         </div>
-                    `);
-                });
-            }, 600);
+                    </div>
+                `);
+            });
         };
 
         // Actions
