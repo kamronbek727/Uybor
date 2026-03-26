@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UyBor Navoiy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .soft-shadow {
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 10px -3px rgba(0, 0, 0, 0.02);
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            padding: 16px 20px;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            transform: translateX(120%);
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 1px solid #f1f5f9;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .loader {
+            border: 3px solid #f1f5f9;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .image-preview-item {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+
+        .image-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .aspect-auto-img {
+            object-fit: contain;
+            background: #f1f5f9;
+        }
+
+        #full-loader-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .map-marker-blue {
+            filter: hue-rotate(0deg);
+        }
+
+        .map-marker-red {
+            filter: hue-rotate(140deg) saturate(1.5);
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .mobile-bottom-nav {
+                display: flex !important;
+            }
+
+            main {
+                padding-bottom: 0 !important;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            #main-content {
+                padding-bottom: 140px !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .header-title {
+                font-size: 1.1rem !important;
+            }
+
+            .p-8 {
+                padding: 1rem !important;
+            }
+
+            .grid {
+                gap: 1rem !important;
+            }
+
+            #modal-content {
+                max-height: 85vh;
+                max-height: 85dvh;
+                border-radius: 0;
+                width: 100% !important;
+                margin: 0;
+                bottom: 0px !important;
+                position: fixed;
+                border-top-left-radius: 32px;
+                border-top-right-radius: 32px;
+                box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.1);
+            }
+
+            #modal-container {
+                padding: 0;
+                align-items: flex-end;
+            }
+
+            .listing-card-img {
+                height: 160px !important;
+            }
+
+            .dashboard-card {
+                padding: 1rem !important;
+                gap: 0.75rem !important;
+            }
+
+            .dashboard-card i {
+                font-size: 1.25rem !important;
+                width: 3rem !important;
+                height: 3rem !important;
+            }
+
+            .toast {
+                left: 16px;
+                right: 16px;
+                bottom: 100px;
+                transform: translateY(200%);
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+
+            #toast-container {
+                top: auto;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                padding: 0 16px;
+                z-index: 10001;
+            }
+
+            #main-content {
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+            }
+
+            #main-content::-webkit-scrollbar {
+                display: none !important;
+            }
+
+            #login-screen {
+                overflow-y: auto;
+                align-items: center;
+            }
+
+            #login-screen>div {
+                margin: auto;
+                max-width: 90%;
+            }
+        }
+
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            height: 72px;
+            background: rgba(255, 255, 255, 0.82) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 36px !important;
+            z-index: 1000 !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 16px;
+        }
+
+        .mobile-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            transition: all 0.3s;
+            gap: 4px;
+            flex: 1;
+            height: 100%;
+        }
+
+        .mobile-nav-btn.active {
+            color: #2563eb;
+        }
+
+        .mobile-nav-btn i {
+            font-size: 1.25rem;
+        }
+
+        .mobile-nav-btn span {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .scroll-hide {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="full-loader-overlay" class="hidden">
+        <div class="loader w-12 h-12 border-4"></div>
+    </div>
+    <div id="toast-container"></div>
+
+    <!-- Login -->
+    <div id="login-screen" class="fixed inset-0 bg-[#f8fafc] z-[1000] flex items-center justify-center p-4">
+        <div class="w-full max-w-[420px] bg-white rounded-[32px] p-10 soft-shadow border border-slate-100 text-center">
+            <div
+                class="w-20 h-20 bg-blue-600 rounded-[24px] flex items-center justify-center text-white text-4xl mx-auto mb-8 shadow-xl shadow-blue-200">
+                <i class="fa-solid fa-house-chimney"></i>
+            </div>
+            <h1 class="text-3xl font-black text-slate-900 mb-2">Xush kelibsiz!</h1>
+            <p class="text-slate-500 mb-10 font-medium">UyBor Navoiy tizimiga kiring</p>
+            <form id="login-form" class="space-y-6">
+                <div class="text-left">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Username</label>
+                    <input type="text" id="login-username" required
+                        class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 focus:ring-2 focus:ring-blue-500 transition-all font-semibold"
+                        placeholder="admin yoki makler">
+                </div>
+                <div class="text-left">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Parol</label>
+                    <input type="password" id="login-password" required
+                        class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 focus:ring-2 focus:ring-blue-500 transition-all font-semibold"
+                        placeholder="••••••••">
+                </div>
+                <button type="submit"
+                    class="w-full h-14 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Kirish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app" class="hidden w-full h-full flex flex-col md:flex-row overflow-hidden relative">
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-100 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:relative flex flex-col">
+            <div class="p-8 flex items-center gap-4">
+                <div
+                    class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-100">
+                    <i class="fa-solid fa-house-user"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 leading-none">UyBor</h2>
+                    <span class="text-[10px] font-black text-blue-600 uppercase tracking-[2px]">Navoiy</span>
+                </div>
+            </div>
+            <nav id="nav-links" class="flex-1 px-4 space-y-1 overflow-y-auto"></nav>
+            <div class="p-6 border-t border-slate-50">
+                <div class="bg-slate-50 rounded-2xl p-4 mb-4 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm font-bold"
+                        id="user-avatar-text">A</div>
+                    <div class="overflow-hidden">
+                        <p class="font-bold text-sm text-slate-900 truncate" id="sidebar-user-name">User Name</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider"
+                            id="sidebar-user-role">Role</p>
+                    </div>
+                </div>
+                <button onclick="logout()"
+                    class="w-full h-12 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-all flex items-center justify-center gap-2"><i
+                        class="fa-solid fa-right-from-bracket"></i> Chiqish</button>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#f8fafc]">
+            <header
+                class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-8 z-40 sticky top-0">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()"
+                        class="md:hidden w-10 h-10 flex items-center justify-center text-slate-500"><i
+                            class="fa-solid fa-bars-staggered text-xl"></i></button>
+                    <h2 id="page-title" class="text-2xl font-black text-slate-900 header-title">Dashboard</h2>
+                </div>
+                <div id="header-actions"></div>
+            </header>
+            <div id="main-content" class="flex-1 overflow-y-auto p-8 relative scroll-hide"></div>
+        </main>
+        <!-- Bottom Nav for Mobile -->
+        <nav id="mobile-nav" class="mobile-bottom-nav"></nav>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-container" class="hidden fixed inset-0 z-[2000] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div id="modal-content"
+            class="bg-white rounded-[32px] w-full max-w-2xl relative z-10 soft-shadow overflow-y-auto flex flex-col max-h-[90vh]">
+        </div>
+    </div>
+
+    <!-- Map Picker Modal -->
+    <div id="map-modal" class="hidden fixed inset-0 z-[3000] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeMapModal()"></div>
+        <div
+            class="bg-white rounded-[32px] w-full max-w-4xl h-[80vh] relative z-10 soft-shadow overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold">Xaritadan belgilang</h3>
+                <button onclick="closeMapModal()"
+                    class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="picker-map" class="flex-1 bg-slate-100"></div>
+            <div class="p-6 border-t border-slate-100 flex gap-4 items-center">
+                <input type="text" id="picker-address"
+                    class="flex-1 h-12 bg-slate-50 border-none rounded-xl px-4 font-semibold"
+                    placeholder="Manzil matni...">
+                <button onclick="confirmLocation()"
+                    class="h-12 bg-blue-600 text-white px-8 rounded-xl font-bold shadow-lg shadow-blue-100">Tasdiqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase Initialization
+        const supabaseUrl = 'https://jxnudymzvwezvhgxmxby.supabase.co';
+        const supabaseKey = 'sb_publishable_NVpi4VEHQ92yPrIE1FxZcQ_FcPa3tg5';
+        const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+
+        // Data Keys
+        const [K_USERS, K_LISTINGS, K_ARCHIVE, K_REQUESTS] = ['u_u', 'u_l', 'u_a', 'u_r'];
+
+        // State
+        let users = [];
+
+let listings = [];
+        let archive = [];
+        let requests = [];
+        let currentUser = JSON.parse(sessionStorage.getItem('u_session')) || null;
+        let uploadImgs = [];
+        let curPage = 'dashboard';
+        let mapFocus = null;
+        let pMap, pMarker, pLoc = null;
+
+        // Helpers
+
+        const save = () => { /* Saved securely on Supabase */ };
+        const toast = (m, t = 'info') => {
+            const c = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            const icons = { success: 'fa-circle-check text-emerald-500', error: 'fa-circle-exclamation text-red-500', info: 'fa-circle-info text-blue-500' };
+            el.className = `toast show ${t}`;
+            el.innerHTML = `<i class="fa-solid ${icons[t]} text-xl"></i> <span>${m}</span>`;
+            c.appendChild(el);
+            setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 500); }, 3000);
+        };
+        const money = (v, c = 'USD') => new Intl.NumberFormat('uz-UZ').format(v) + (c === 'USD' ? ' $' : ' so\'m');
+        const dt = (s) => new Date(s).toLocaleString('uz-UZ', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        const gid = () => Math.random().toString(36).substr(2, 9);
+        const toggleLoader = (v) => document.getElementById('full-loader-overlay').style.display = v ? 'flex' : 'none';
+        window.closeModal = () => document.getElementById('modal-container').classList.add('hidden');
+        window.closeMapModal = () => document.getElementById('map-modal').classList.add('hidden');
+        const loadDataFromSupabase = async () => {
+            toggleLoader(true);
+            try {
+                let {data:u} = await supabaseClient.from('users').select('*');
+                if(u) users = u.map(x => ({id: x.id, username: x.username, password: x.password, name: x.name, role: x.role, phone: x.phone}));
+                
+                let {data:l} = await supabaseClient.from('listings').select('*');
+                if(l) {
+                    listings = l.filter(x => x.status === 'active').map(x => ({id: x.id, maklerId: x.makler_id, category: x.category, type: x.type, addressText: x.address_text, price: x.price, currency: x.currency, rooms: x.rooms, area: x.area, desc: x.desc_text, loc: {lat: parseFloat(x.lat || 0), lng: parseFloat(x.lng || 0)}, images: x.images || [], createdAt: x.created_at}));
+                    archive = l.filter(x => x.status === 'sold').map(x => ({id: x.id, maklerId: x.makler_id, category: x.category, type: x.type, addressText: x.address_text, price: x.price, currency: x.currency, rooms: x.rooms, area: x.area, desc: x.desc_text, loc: {lat: parseFloat(x.lat || 0), lng: parseFloat(x.lng || 0)}, images: x.images || [], createdAt: x.created_at, soldAt: x.sold_at}));
+                }
+                
+                let {data:r} = await supabaseClient.from('requests').select('*');
+                if(r) requests = r.map(x => ({id: x.id, listingId: x.listing_id, maklerId: x.makler_id, status: x.status, date: x.created_at}));
+            } catch(e) { console.error(e); }
+            toggleLoader(false);
+        };
+
+
+        // Auth
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            toggleLoader(true);
+            const uInput = document.getElementById('login-username').value;
+            const pInput = document.getElementById('login-password').value;
+            const { data: u } = await supabaseClient.from('users').select('*').eq('username', uInput).eq('password', pInput).single();
+            if (u) {
+                currentUser = {id: u.id, username: u.username, password: u.password, name: u.name, role: u.role, phone: u.phone};
+                sessionStorage.setItem('u_session', JSON.stringify(currentUser));
+                await loadDataFromSupabase();
+                init();
+            } else toast('Login yoki parol xato', 'error');
+            toggleLoader(false);
+        };
+        const logout = () => {
+            sessionStorage.removeItem('u_session');
+            location.reload();
+        };
+
+        // Navigation
+        const pages = {
+            admin: [
+                { id: 'dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
+                { id: 'listings', icon: 'fa-house', label: 'Uylar' },
+                { id: 'archive', icon: 'fa-box-archive', label: 'Arxiv' },
+                { id: 'map', icon: 'fa-map-location-dot', label: 'Xarita' },
+                { id: 'requests', icon: 'fa-bell', label: 'So\'rovlar' },
+                { id: 'maklers', icon: 'fa-users', label: 'Maklerlar' },
+                { id: 'telegram', icon: 'fa-paper-plane', label: 'Telegram Bot' }
+            ],
+            makler: [
+                { id: 'listings', icon: 'fa-house', label: 'Uylar' },
+                { id: 'archive', icon: 'fa-box-archive', label: 'Sotilganlar' },
+                { id: 'map', icon: 'fa-map-location-dot', label: 'Xarita' },
+                { id: 'requests', icon: 'fa-clock', label: 'Kutilayotgan' }
+            ]
+        };
+
+        const navigate = (id) => {
+            curPage = id;
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-blue-50', 'text-blue-600', 'font-black'));
+            document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+
+            document.getElementById('nav-' + id)?.classList.add('bg-blue-50', 'text-blue-600', 'font-black');
+            document.getElementById('mobile-nav-' + id)?.classList.add('active');
+
+            const page = pages[currentUser.role].find(p => p.id === id);
+            document.getElementById('page-title').innerText = page ? page.label : 'Dashboard';
+
+            // Reset map variables when navigating away from map to ensure fresh init
+            if (id !== 'map') {
+                mapInstance = null;
+                currentLayer = null;
+            }
+
+            render(id);
+            if (window.innerWidth < 768) toggleSidebar(false);
+        };
+
+        const toggleSidebar = (v) => {
+            const s = document.getElementById('sidebar');
+            if (v === undefined) s.classList.toggle('-translate-x-full');
+            else v ? s.classList.remove('-translate-x-full') : s.classList.add('-translate-x-full');
+
+            // Re-render map if it exists to fix sizing issues after sidebar toggle
+            if (curPage === 'map' && mapInstance) {
+                setTimeout(() => mapInstance.invalidateSize(), 300);
+            }
+        };
+
+        // Renderers
+        const render = (id) => {
+            const main = document.getElementById('main-content');
+            const hActions = document.getElementById('header-actions');
+            main.innerHTML = '';
+            hActions.innerHTML = '';
+
+            if (id === 'dashboard') renderDashboard(main);
+            else if (id === 'listings') renderListings(main, hActions, false);
+            else if (id === 'archive') renderListings(main, hActions, true);
+            else if (id === 'maklers') renderMaklers(main, hActions);
+            else if (id === 'requests') renderRequests(main);
+            else if (id === 'map') renderMap(main);
+            else if (id === 'telegram') renderTelegramBot(main, hActions);
+        };
+
+        const renderDashboard = (con) => {
+            if (currentUser.role !== 'admin') {
+                con.innerHTML = `<div class="bg-white p-12 rounded-[32px] soft-shadow text-center">
+                    <h2 class="text-3xl font-black mb-4">Salom, ${currentUser.name}!</h2>
+                    <p class="text-slate-500">Bugungi sotuvlaringizni boshlang.</p>
+                </div>`;
+                return;
+            }
+            const activeCount = listings.length;
+            const soldCount = archive.length;
+            const mCount = users.filter(u => u.role === 'makler').length;
+            con.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6 dashboard-card">
+                        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl"><i class="fa-solid fa-house"></i></div>
+                        <div><p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Sotuvda</p><h3 class="text-4xl font-black">${activeCount}</h3></div>
+                    </div>
+                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6 dashboard-card">
+                        <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl"><i class="fa-solid fa-check-double"></i></div>
+                        <div><p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Sotilgan</p><h3 class="text-4xl font-black">${soldCount}</h3></div>
+                    </div>
+                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 flex items-center gap-6 dashboard-card">
+                        <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-3xl"><i class="fa-solid fa-users"></i></div>
+                        <div><p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Maklerlar</p><h3 class="text-4xl font-black">${mCount}</h3></div>
+                    </div>
+                </div>
+                <div class="bg-white p-10 rounded-[40px] soft-shadow border border-slate-50">
+                    <h4 class="text-xl font-black mb-8">Reyting</h4>
+                    <div class="space-y-6">
+                        ${users.filter(u => u.role === 'makler').map(m => {
+                const count = archive.filter(a => a.maklerId === m.id).length;
+                return `
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center font-bold text-slate-600">${m.name[0]}</div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between mb-2"><span class="font-bold">${m.name}</span><span class="font-black text-blue-600">${count} ta</span></div>
+                                        <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-600 rounded-full" style="width: ${Math.min(100, (count / 10) * 100)}%"></div></div>
+                                    </div>
+                                </div>
+                            `;
+            }).join('')}
+                    </div>
+                </div>
+            `;
+        };
+        const renderListings = (con, act, isArchive) => {
+            let data = isArchive ? archive : listings;
+
+            const filterHtml = `
+                <div class="bg-white p-6 rounded-[32px] border border-slate-50 mb-8 flex flex-wrap gap-4 items-end soft-shadow">
+                    <div class="flex-1 min-w-[200px]"><label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest px-1">Qidirish</label><input type="text" id="f-search" oninput="applyFilters(${isArchive})" placeholder="Manzil..." class="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-blue-500"></div>
+                    <div><label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest px-1">Turi</label><select id="f-cat" onchange="applyFilters(${isArchive})" class="h-12 bg-slate-50 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-blue-500"><option value="">Barchasi</option><option value="Sotuv">Sotuv</option><option value="Ijara">Ijara</option></select></div>
+                    <div><label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest px-1">Shakl</label><select id="f-type" onchange="applyFilters(${isArchive})" class="h-12 bg-slate-50 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-blue-500"><option value="">Barchasi</option><option value="Dom">Dom</option><option value="Hovli">Hovli</option></select></div>
+                    <div><label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest px-1">Xonalar</label><select id="f-rooms" onchange="applyFilters(${isArchive})" class="h-12 bg-slate-50 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-blue-500"><option value="">Barchasi</option><option value="1">1 xona</option><option value="2">2 xona</option><option value="3">3 xona</option><option value="4">4+ xona</option></select></div>
+                </div>
+            `;
+
+            act.innerHTML = !isArchive && (currentUser.role === 'admin' || currentUser.role === 'makler') ? `<button onclick="openListingModal()" class="h-12 bg-blue-600 text-white px-6 rounded-2xl font-bold shadow-lg shadow-blue-100 flex items-center gap-2"><i class="fa-solid fa-plus"></i> Yangi e'lon</button>` : '';
+
+            con.innerHTML = filterHtml + '<div id="listing-grid-container"></div>';
+            renderGrid(data, isArchive);
+        };
+
+        const applyFilters = (isArchive) => {
+            let data = isArchive ? archive : listings;
+
+            const search = document.getElementById('f-search').value.toLowerCase();
+            const cat = document.getElementById('f-cat').value;
+            const type = document.getElementById('f-type').value;
+            const rooms = document.getElementById('f-rooms').value;
+
+            const filtered = data.filter(d => {
+                const matchSearch = (d.addressText || '').toLowerCase().includes(search);
+                const matchCat = !cat || d.category === cat;
+                const matchType = !type || d.type === type;
+                const matchRooms = !rooms || (rooms === '4' ? parseInt(d.rooms) >= 4 : d.rooms == rooms);
+                return matchSearch && matchCat && matchType && matchRooms;
+            });
+            renderGrid(filtered, isArchive);
+        };
+
+        const renderGrid = (data, isArchive) => {
+            const con = document.getElementById('listing-grid-container');
+            if (data.length === 0) {
+                con.innerHTML = `<div class="h-64 flex flex-col items-center justify-center text-slate-300"><i class="fa-solid fa-folder-open text-6xl mb-4"></i><p class="font-bold text-xl">Topilmadi</p></div>`;
+                return;
+            }
+
+            con.innerHTML = `<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
+                ${data.map(item => `
+                    <div class="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden soft-shadow border border-slate-50 group flex flex-col">
+                        <div class="relative h-40 md:h-56 bg-white overflow-hidden listing-card-img">
+                            ${item.images?.length > 0 ? `<img src="${item.images[0]}" class="w-full h-full object-contain aspect-auto-img group-hover:scale-105 transition-transform duration-500">` : `<div class="w-full h-full flex items-center justify-center text-slate-300 text-4xl"><i class="fa-solid fa-image"></i></div>`}
+                            <div class="absolute top-4 left-4 flex gap-2">
+                                <span class="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-slate-900">${item.category}</span>
+                                <span class="bg-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white">${item.type || 'Hovli'}</span>
+                            </div>
+                            ${isArchive ? `<div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center text-white font-black text-xl uppercase tracking-widest backdrop-blur-sm">Sotilgan</div>` : ''}
+                        </div>
+                        <div class="p-3 md:p-6 flex-1 flex flex-col">
+                            <h4 class="font-black text-slate-900 text-sm md:text-lg mb-1 md:mb-2 line-clamp-1">${item.addressText || 'Manzil ko\'rsatilmagan'}</h4>
+                            <div class="flex flex-wrap gap-2 md:gap-4 text-[10px] md:text-xs font-bold text-slate-400 mb-3 md:mb-6">
+                                <span><i class="fa-solid fa-door-open mr-0.5"></i> ${item.rooms} xona</span>
+                                <span><i class="fa-solid fa-expand mr-0.5"></i> ${item.area} m²</span>
+                            </div>
+                            <div class="mt-auto pt-3 md:pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div class="font-black text-base md:text-xl text-blue-600">${money(item.price, item.currency)}</div>
+                                <div class="flex gap-1.5 md:gap-2 w-full sm:w-auto">
+                                    <button onclick="viewDetail('${item.id}', ${isArchive})" title="Ko'rish" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white transition-all"><i class="fa-solid fa-eye text-sm"></i></button>
+                                    ${!isArchive ? `
+                                        ${(currentUser.role === 'admin' || item.maklerId === currentUser.id) ? `<button onclick="openListingModal('${item.id}')" title="Tahrirlash" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-600 hover:text-white transition-all"><i class="fa-solid fa-pen-to-square text-sm"></i></button>` : ''}
+                                        <button onclick="window.requestSold('${item.id}')" title="Sotildi" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-emerald-50 text-emerald-500 hover:bg-emerald-600 hover:text-white transition-all"><i class="fa-solid fa-dollar-sign text-sm"></i></button>
+                                        ${(currentUser.role === 'admin' || item.maklerId === currentUser.id) ? `<button onclick="deleteListing('${item.id}')" title="O'chirish" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash text-sm"></i></button>` : ''}
+                                    ` : `
+                                        ${currentUser.role === 'admin' ? `<button onclick="deleteListing('${item.id}')" title="O'chirish" class="flex-1 sm:w-10 h-9 md:h-10 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash text-sm"></i></button>` : ''}
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+        };
+
+        const renderMaklers = (con, act) => {
+            if (currentUser.role !== 'admin') return;
+            act.innerHTML = `<button onclick="openMaklerModal()" class="h-12 bg-blue-600 text-white px-6 rounded-2xl font-bold shadow-lg shadow-blue-100 flex items-center gap-2"><i class="fa-solid fa-user-plus"></i></button>`;
+            const mList = users.filter(u => u.role === 'makler');
+            con.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                ${mList.map(m => `
+                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 relative group">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-2xl font-black">${m.name[0]}</div>
+                            <div><h4 class="font-black text-slate-900 text-lg">${m.name}</h4><p class="text-xs font-bold text-slate-400">@${m.username}</p></div>
+                        </div>
+                        <div class="space-y-4 mb-4">
+                            <div class="flex justify-between text-sm"><span class="text-slate-400 font-bold">Telefon:</span><span class="font-black text-slate-900">${m.phone || '-'}</span></div>
+                            <div class="flex justify-between text-sm"><span class="text-slate-400 font-bold">Sotuvlar:</span><span class="font-black text-emerald-500">${archive.filter(a => a.maklerId === m.id).length} ta</span></div>
+                        </div>
+                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="openMaklerModal('${m.id}')" class="flex-1 h-10 bg-slate-50 text-slate-500 rounded-xl font-bold text-xs">Tahrirlash</button>
+                            <button onclick="deleteUser('${m.id}')" class="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+        };
+
+        const renderRequests = (con) => {
+            let data = requests;
+            if (currentUser.role === 'makler') data = data.filter(r => r.maklerId === currentUser.id);
+            if (data.length === 0) {
+                con.innerHTML = `<div class="h-96 flex flex-col items-center justify-center text-slate-200"><i class="fa-solid fa-bell-slash text-6xl"></i></div>`;
+                return;
+            }
+            con.innerHTML = `<div class="bg-white rounded-[40px] soft-shadow border border-slate-50 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100"><tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8"><th class="py-6 px-10">Ma'lumot</th><th class="py-6">Makler</th><th class="py-6">Sana</th><th class="py-6 pr-10 text-right">Amal</th></tr></thead>
+                    <tbody class="divide-y divide-slate-50 font-bold text-sm">
+                        ${data.map(req => {
+                const listing = listings.find(l => l.id === req.listingId);
+                const m = users.find(u => u.id === req.maklerId);
+                return `
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="py-6 px-10"><div>${listing?.addressText || 'E\'lon o\'chirilgan'}</div><div class="text-[10px] text-blue-600">${money(listing?.price || 0)}</div></td>
+                                    <td class="py-6">${m?.name}</td>
+                                    <td class="py-6 text-slate-400">${dt(req.date)}</td>
+                                    <td class="py-6 pr-10 text-right">
+                                        ${currentUser.role === 'admin' ? `
+                                            <div class="flex justify-end gap-2"><button onclick="approveSale('${req.id}')" class="h-10 bg-emerald-500 text-white px-4 rounded-xl text-xs font-black">OK</button><button onclick="rejectSale('${req.id}')" class="h-10 bg-red-500 text-white px-4 rounded-xl text-xs font-black">X</button></div>
+                                        ` : '<span class="text-yellow-500 px-3 py-1 bg-yellow-50 rounded-full text-[10px]">KUTILMOQDA</span>'}
+                                    </td>
+                                </tr>
+                            `;
+            }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        };
+
+        const renderMap = (con) => {
+            con.innerHTML = `
+                <div class="flex flex-col h-full gap-4">
+                    <div class="bg-white p-4 rounded-3xl border border-slate-50 flex flex-wrap gap-3 items-end soft-shadow transition-all duration-300">
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Qidirish</label>
+                            <input type="text" id="m-f-search" oninput="applyMapFilters()" placeholder="Manzil..." class="w-full h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Turi</label>
+                            <select id="m-f-cat" onchange="applyMapFilters()" class="h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                                <option value="">Hammasi</option>
+                                <option value="Sotuv">Sotuv</option>
+                                <option value="Ijara">Ijara</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Shakl</label>
+                            <select id="m-f-type" onchange="applyMapFilters()" class="h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                                <option value="">Hammasi</option>
+                                <option value="Dom">Dom</option>
+                                <option value="Hovli">Hovli</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest px-1">Holat</label>
+                            <select id="m-f-status" onchange="applyMapFilters()" class="h-10 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-blue-500">
+                                <option value="active">Sotuvdagilar</option>
+                                <option value="sold">Sotilganlar</option>
+                                <option value="all">Barchasi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-[32px] soft-shadow p-1.5 border border-slate-50 flex-1 relative overflow-hidden min-h-[400px]">
+                        <div id="main-map" class="w-full h-full rounded-[28px] z-0"></div>
+                    </div>
+                </div>`;
+
+            setTimeout(() => {
+                applyMapFilters();
+            }, 100);
+        };
+
+        let currentLayer = null;
+        let mapInstance = null;
+
+        const applyMapFilters = () => {
+            const mapEl = document.getElementById('main-map');
+            if (!mapEl) return;
+
+            const search = document.getElementById('m-f-search').value.toLowerCase();
+            const cat = document.getElementById('m-f-cat').value;
+            const type = document.getElementById('m-f-type').value;
+            const status = document.getElementById('m-f-status').value;
+
+            if (!mapInstance) {
+                mapInstance = L.map('main-map').setView(mapFocus ? [mapFocus.lat, mapFocus.lng] : [40.103, 65.373], mapFocus ? 17 : 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
+                if (mapFocus) {
+                    L.popup().setLatLng([mapFocus.lat, mapFocus.lng]).setContent(`<div class="p-2"><h4 class="font-black text-sm mb-1">${mapFocus.label}</h4></div>`).openOn(mapInstance);
+                    mapFocus = null;
+                }
+            }
+
+            if (currentLayer) mapInstance.removeLayer(currentLayer);
+            currentLayer = L.layerGroup().addTo(mapInstance);
+
+            // Filter listings
+            const filteredListings = status === 'sold' ? [] : listings.filter(l => {
+                const matchSearch = (l.addressText || '').toLowerCase().includes(search);
+                const matchCat = !cat || l.category === cat;
+                const matchType = !type || l.type === type;
+                return matchSearch && matchCat && matchType;
+            });
+
+            // Filter archive
+            const filteredArchive = status === 'active' ? [] : archive.filter(l => {
+                const matchSearch = (l.addressText || '').toLowerCase().includes(search);
+                const matchCat = !cat || l.category === cat;
+                const matchType = !type || l.type === type;
+                return matchSearch && matchCat && matchType;
+            });
+
+            filteredListings.forEach(l => {
+                const m = L.marker([l.loc.lat, l.loc.lng]).addTo(currentLayer);
+                m.bindPopup(`
+                    <div class="p-2 min-w-[200px]">
+                        <h4 class="font-black text-sm mb-1">${l.addressText || 'Manzil yo\'q'}</h4>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">${l.type || 'Hovli'} / ${l.category}</div>
+                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+                            <span class="text-blue-600 font-bold">${money(l.price, l.currency)}</span>
+                            <button onclick="window.viewDetail('${l.id}', false)" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-md font-bold">Batafsil</button>
+                        </div>
+                    </div>
+                `);
+            });
+
+            const redIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
+            filteredArchive.forEach(l => {
+                const m = L.marker([l.loc.lat, l.loc.lng], { icon: redIcon }).addTo(currentLayer);
+                m.bindPopup(`
+                    <div class="p-2 min-w-[200px]">
+                        <h4 class="font-black text-sm mb-1">${l.addressText}</h4>
+                        <div class="text-red-500 font-bold mb-2 text-[10px]">${l.type || 'Hovli'} - SOTILGAN</div>
+                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+                            <span class="text-slate-600 font-bold">${money(l.price, l.currency)}</span>
+                            <button onclick="window.viewDetail('${l.id}', true)" class="bg-slate-800 text-white text-[10px] px-3 py-1 rounded-md font-bold">Batafsil</button>
+                        </div>
+                    </div>
+                `);
+            });
+        };
+
+        // Actions
+        const closeModal = window.closeModal;
+        const showModal = (html) => {
+            const c = document.getElementById('modal-content');
+            c.innerHTML = html;
+            document.getElementById('modal-container').classList.remove('hidden');
+        };
+
+        const openMaklerModal = (id = null) => {
+            const m = id ? users.find(u => u.id === id) : null;
+            showModal(`
+                <div class="p-6 md:p-10">
+                    <h3 class="text-2xl font-black mb-8">${id ? 'Tahrirlash' : 'Yangi makler'}</h3>
+                    <form onsubmit="handleUserSave(event, '${id || ''}')" class="space-y-6">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div><label class="block text-xs font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Ism Familiya</label><input type="text" id="m-name" required value="${m?.name || ''}" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 font-bold"></div>
+                            <div><label class="block text-xs font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Username</label><input type="text" id="m-user" required value="${m?.username || ''}" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 font-bold"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div><label class="block text-xs font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Parol</label><input type="text" id="m-pass" required value="${m?.password || ''}" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 font-bold"></div>
+                            <div><label class="block text-xs font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Telefon</label><input type="text" id="m-phone" value="${m?.phone || ''}" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 font-bold"></div>
+                        </div>
+                        <div class="flex gap-4 pt-4">
+                            <button type="button" onclick="closeModal()" class="flex-1 h-14 bg-slate-100 text-slate-500 rounded-2xl font-black">Bekor qilish</button>
+                            <button type="submit" class="flex-1 h-14 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100">Saqlash</button>
+                        </div>
+                    </form>
+                </div>
+            `);
+        };
+
+        const handleUserSave = async (e, id) => {
+            e.preventDefault();
+            toggleLoader(true);
+            const data = { name: document.getElementById('m-name').value, username: document.getElementById('m-user').value, password: document.getElementById('m-pass').value, phone: document.getElementById('m-phone').value, role: 'makler' };
+            if (id) {
+                await supabaseClient.from('users').update(data).eq('id', id);
+            } else {
+                const { data: exist } = await supabaseClient.from('users').select('id').eq('username', data.username);
+                if(exist && exist.length > 0) { toast('Username band', 'error'); toggleLoader(false); return; }
+                await supabaseClient.from('users').insert([data]);
+            }
+            await loadDataFromSupabase();
+            toast('Muvaffaqiyatli', 'success'); closeModal(); render('maklers');
+        };
+
+        const deleteUser = async (id) => { if (confirm('O\'chirilsinmi?')) { toggleLoader(true); await supabaseClient.from('users').delete().eq('id', id); await loadDataFromSupabase(); render('maklers'); } };
+
+        const openListingModal = (id = null) => {
+            const l = id ? (listings.find(x => x.id === id) || archive.find(x => x.id === id)) : null;
+            pLoc = l ? l.loc : null;
+            uploadImgs = l ? [...(l.images || [])] : [];
+
+            showModal(`
+                <div class="p-6 md:p-10 flex-1 overflow-y-auto">
+                    <h3 class="text-2xl font-black mb-10">${id ? 'Tahrirlash' : 'Yangi e\'lon'}</h3>
+                    <div class="space-y-8">
+                        <div class="flex gap-4">
+                            <button onclick="openMapModal()" id="map-btn" class="flex-1 h-20 bg-blue-50 border-2 border-dashed border-blue-200 rounded-[28px] text-blue-600 font-bold flex items-center justify-center gap-3 hover:bg-blue-100 transition-all"><i class="fa-solid fa-map-location-dot text-2xl"></i> Xaritadan tanlash</button>
+                            <div id="loc-status" class="w-20 h-20 bg-slate-50 rounded-[28px] ${pLoc ? 'flex' : 'hidden'} items-center justify-center text-emerald-500 text-2xl border-2 border-emerald-100"><i class="fa-solid fa-check"></i></div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">To'liq Manzil</label>
+                            <input type="text" id="l-address" value="${l?.addressText || ''}" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 font-bold" placeholder="Ko'cha, uy raqami, mo'ljal...">
+                        </div>
+                        <div class="grid grid-cols-2 gap-8 mt-8">
+                            <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Narxi</label><input type="number" id="l-price" value="${l?.price || ''}" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 font-black text-xl text-blue-600"></div>
+                            <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Valyuta</label><select id="l-curr" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-5 font-bold"><option value="USD" ${l?.currency === 'USD' ? 'selected' : ''}>USD ($)</option><option value="UZS" ${l?.currency === 'UZS' ? 'selected' : ''}>UZS (so'm)</option></select></div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Shakl</label><select id="l-type" class="w-full h-12 bg-slate-50 border-none rounded-2xl px-4 font-bold"><option value="Hovli" ${l?.type === 'Hovli' ? 'selected' : ''}>Hovli</option><option value="Dom" ${l?.type === 'Dom' ? 'selected' : ''}>Dom</option></select></div>
+                            <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Turi</label><select id="l-cat" class="w-full h-12 bg-slate-50 border-none rounded-2xl px-4 font-bold"><option value="Sotuv" ${l?.category === 'Sotuv' ? 'selected' : ''}>Sotuv</option><option value="Ijara" ${l?.category === 'Ijara' ? 'selected' : ''}>Ijara</option></select></div>
+                            <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Xonalar</label><input type="number" id="l-rooms" value="${l?.rooms || '1'}" class="w-full h-12 bg-slate-50 border-none rounded-2xl px-4 font-bold"></div>
+                            <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Maydoni (m²)</label><input type="number" id="l-area" value="${l?.area || ''}" class="w-full h-12 bg-slate-50 border-none rounded-2xl px-4 font-bold"></div>
+                        </div>
+                        <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Rasmlar (Barcha rasm 500kb gacha siqiladi)</label><div id="img-pre-grid" class="flex gap-4 overflow-x-auto pb-2 scroll-hide">${uploadImgs.map(img => `<div class="w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 flex-shrink-0"><img src="${img}" class="w-full h-full object-contain bg-black"></div>`).join('')}</div><label class="w-full h-20 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[28px] flex items-center justify-center text-slate-400 font-bold gap-3 cursor-pointer hover:bg-slate-100 transition-colors"><i class="fa-solid fa-cloud-arrow-up text-xl"></i> Yuklash<input type="file" multiple accept="image/*" class="hidden" onchange="handleImgs(this)"></label></div>
+                        <div><label class="block text-[10px] font-black text-slate-400 mb-2 px-1 uppercase tracking-widest">Izoh (ixtiyoriy)</label><textarea id="l-desc" class="w-full h-32 bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold resize-none" placeholder="Uy haqida qo'shimcha ma'lumot...">${l?.desc || ''}</textarea></div>
+                        <div class="flex gap-4 pt-6">
+                            <button onclick="closeModal()" class="flex-1 h-16 bg-slate-100 text-slate-500 rounded-[24px] font-black">Bekor qilish</button>
+                            <button onclick="saveListing('${id || ''}')" class="flex-[1.5] h-16 bg-blue-600 text-white rounded-[24px] font-black shadow-xl shadow-blue-100 transition-all hover:scale-[1.02]">Saqlash</button>
+                        </div>
+                    </div>
+                </div>
+            `);
+        };
+
+        const openMapModal = () => {
+            document.getElementById('map-modal').classList.remove('hidden');
+            setTimeout(() => {
+                if (pMap) { pMap.remove(); pMap = null; pMarker = null; }
+                pMap = L.map('picker-map').setView([40.103, 65.373], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(pMap);
+                pMap.on('click', e => {
+                    if (pMarker) pMarker.setLatLng(e.latlng); else pMarker = L.marker(e.latlng).addTo(pMap);
+                    pLoc = e.latlng;
+                });
+            }, 500);
+        };
+        const closeMapModal = () => document.getElementById('map-modal').classList.add('hidden');
+        const confirmLocation = () => {
+            if (!pLoc) return toast('Xaritadan belgilang!', 'error');
+            const addr = document.getElementById('picker-address').value;
+            if (addr && document.getElementById('l-address')) document.getElementById('l-address').value = addr;
+            document.getElementById('loc-status').classList.remove('hidden');
+            document.getElementById('loc-status').classList.add('flex');
+            closeMapModal();
+        };
+
+        const handleImgs = async (i) => {
+            const files = Array.from(i.files); toggleLoader(true);
+            for (const f of files) {
+                const b64 = await compress(f);
+                if (uploadImgs.length < 20) uploadImgs.push(b64);
+            }
+            document.getElementById('img-pre-grid').innerHTML = uploadImgs.map(img => `<div class="w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 flex-shrink-0"><img src="${img}" class="w-full h-full object-contain bg-black"></div>`).join('');
+            toggleLoader(false);
+        };
+
+        const compress = (f) => new Promise(res => {
+            const r = new FileReader(); r.readAsDataURL(f);
+            r.onload = e => {
+                const i = new Image(); i.src = e.target.result;
+                i.onload = () => {
+                    const c = document.createElement('canvas'); const ct = c.getContext('2d');
+                    let w = i.width, h = i.height; const max = 1200;
+                    if (w > h) { if (w > max) { h *= max / w; w = max; } } else { if (h > max) { w *= max / h; h = max; } }
+                    c.width = w; c.height = h; ct.drawImage(i, 0, 0, w, h);
+                    res(c.toDataURL('image/jpeg', 0.7));
+                };
+            };
+        });
+
+        const saveListing = async (id = '') => {
+            if (!pLoc) return toast('Xaritadan belgilang', 'error');
+            toggleLoader(true);
+            const data = {
+                lat: pLoc.lat, lng: pLoc.lng, address_text: document.getElementById('l-address').value,
+                price: document.getElementById('l-price').value, currency: document.getElementById('l-curr').value,
+                category: document.getElementById('l-cat').value, type: document.getElementById('l-type').value,
+                rooms: document.getElementById('l-rooms').value, area: document.getElementById('l-area').value, 
+                images: uploadImgs, desc_text: document.getElementById('l-desc').value
+            };
+
+            if (id) {
+                await supabaseClient.from('listings').update(data).eq('id', id);
+            } else {
+                data.makler_id = currentUser.id;
+                data.status = 'active';
+                await supabaseClient.from('listings').insert([data]);
+            }
+            await loadDataFromSupabase(); toast('Tayyor!', 'success'); closeModal(); render(curPage);
+        };
+
+        const deleteListing = async (id) => {
+            if (confirm('Ushbu e\'lon butunlay o\'chirilsinmi?')) {
+                toggleLoader(true);
+                await supabaseClient.from('listings').delete().eq('id', id);
+                await loadDataFromSupabase(); render(curPage);
+            }
+        };
+
+        const requestSold = async (id) => {
+            if (currentUser.role === 'admin') {
+                if (confirm('Ushbu uyni sotilgan deb belgilaysizmi?')) {
+                    toggleLoader(true);
+                    await supabaseClient.from('listings').update({ status: 'sold', sold_at: new Date().toISOString(), images: [] }).eq('id', id);
+                    await loadDataFromSupabase(); toast('Sotildi', 'success'); render(curPage);
+                }
+            } else {
+                if (confirm('Sotilganini tasdiqlash uchun adminga so\'rov yuborilsinmi?')) {
+                    toggleLoader(true);
+                    await supabaseClient.from('requests').insert([{ listing_id: id, makler_id: currentUser.id }]);
+                    await loadDataFromSupabase(); toast('So\'rov yuborildi', 'success'); render(curPage);
+                }
+            }
+        };
+
+        const approveSale = async (rid) => {
+            const req = requests.find(r => r.id === rid);
+            toggleLoader(true);
+            if(req) await supabaseClient.from('listings').update({ status: 'sold', sold_at: new Date().toISOString(), images: [] }).eq('id', req.listingId);
+            await supabaseClient.from('requests').delete().eq('id', rid);
+            await loadDataFromSupabase(); toast('Sotuv tasdiqlandi', 'success'); render('requests');
+        };
+        const rejectSale = async (rid) => { toggleLoader(true); await supabaseClient.from('requests').delete().eq('id', rid); await loadDataFromSupabase(); render('requests'); };
+
+        const viewDetail = (id, archiveMode) => {
+            const itm = archiveMode ? archive.find(l => l.id === id) : listings.find(l => l.id === id);
+            if (!itm) return;
+
+            window.activeItemImages = itm.images || [];
+            window.activeItemImageIndex = 0;
+
+            window.closeModal(); // Small delay to ensure clean transition
+            setTimeout(() => {
+                showModal(`
+                    <div class="p-6 md:p-10">
+                        ${itm.images?.length > 0 ? `
+                        <div class="mb-8">
+                            <div class="h-80 md:h-[400px] w-full bg-slate-900 rounded-[32px] overflow-hidden relative group soft-shadow shadow-lg">
+                                <img id="detail-main-img" src="${itm.images[0]}" class="w-full h-full object-contain transition-all duration-300">
+                                ${itm.images.length > 1 ? `
+                                <button onclick="window.changeDetailImg(-1)" class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/70 backdrop-blur-md rounded-full text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10 scale-90 hover:scale-100"><i class="fa-solid fa-chevron-left"></i></button>
+                                <button onclick="window.changeDetailImg(1)" class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/70 backdrop-blur-md rounded-full text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10 scale-90 hover:scale-100"><i class="fa-solid fa-chevron-right"></i></button>
+                                ` : ''}
+                                <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold z-10">
+                                    <span id="detail-img-counter">1</span> / ${itm.images.length}
+                                </div>
+                            </div>
+                            ${itm.images.length > 1 ? `
+                            <div class="flex gap-3 mt-4 overflow-x-auto pb-4 scroll-hide px-1 snap-x">
+                                ${itm.images.map((img, idx) => `
+                                    <div onclick="window.setDetailImg(${idx})" class="detail-thumb snap-center w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer border-[3px] transition-all transform hover:scale-105 ${idx === 0 ? 'border-blue-600 opacity-100 shadow-md shadow-blue-200' : 'border-transparent opacity-50 hover:opacity-100'}">
+                                        <img src="${img}" class="w-full h-full object-cover">
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : `
+                        <div class="h-80 md:h-[400px] w-full bg-slate-100 rounded-[32px] flex items-center justify-center text-slate-300 text-6xl mb-8"><i class="fa-solid fa-image"></i></div>
+                        `}
+                        <h3 class="text-3xl font-black mb-4">${money(itm.price, itm.currency)}</h3>
+                        <p class="text-xl font-bold text-slate-700 mb-6">${itm.addressText || 'Manzil ko\'rsatilmagan'}</p>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 bg-slate-50 p-6 rounded-[28px] border border-slate-100 mb-4">
+                            <div><p class="text-[10px] font-black text-slate-400 uppercase mb-1">Xonalar</p><p class="font-black text-slate-900">${itm.rooms} xona</p></div>
+                            <div><p class="text-[10px] font-black text-slate-400 uppercase mb-1">Maydoni</p><p class="font-black text-slate-900">${itm.area} m²</p></div>
+                            <div><p class="text-[10px] font-black text-slate-400 uppercase mb-1">Sana</p><p class="font-bold text-slate-900">${dt(itm.createdAt)}</p></div>
+                            <div><p class="text-[10px] font-black text-slate-400 uppercase mb-1">Shakl</p><p class="font-black text-blue-600">${itm.type || 'Hovli'}</p></div>
+                        </div>
+                        ${itm.desc ? `<div class="bg-slate-50 p-6 rounded-[28px] border border-slate-100 mb-4"><p class="text-[10px] font-black text-slate-400 uppercase mb-2">Izoh</p><p class="font-medium text-slate-700 leading-relaxed">${itm.desc}</p></div>` : ''}
+                        <div class="grid grid-cols-2 gap-6 bg-slate-50 p-6 rounded-[28px] border border-slate-100">
+                            <div><p class="text-[10px] font-black text-slate-400 uppercase mb-1">Kategoriya</p><p class="font-black text-slate-900">${itm.category}</p></div>
+                            <div><p class="text-[10px] font-black text-slate-400 uppercase mb-1">Narxi</p><p class="font-black text-blue-600">${money(itm.price, itm.currency)}</p></div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-4 mt-10">
+                            ${!archiveMode ? `<button onclick="window.requestSold('${itm.id}')" class="flex-1 h-16 bg-emerald-500 text-white rounded-[28px] font-black shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"><i class="fa-solid fa-dollar-sign text-xl"></i> Sotilgan deb belgilash</button>` : ''}
+                            <button onclick="showOnMap(${itm.loc.lat}, ${itm.loc.lng}, '${itm.addressText || ''}')" class="flex-1 h-16 bg-blue-600 text-white rounded-[28px] font-black shadow-lg shadow-blue-100 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"><i class="fa-solid fa-map-location-dot text-xl"></i> Xaritada ko'rish</button>
+                            <button onclick="window.closeModal()" class="flex-1 h-16 bg-slate-100 text-slate-500 rounded-[28px] font-black hover:bg-slate-200 transition-all">Yopish</button>
+                        </div>
+                    </div>
+                `);
+            }, 100);
+        };
+
+        window.changeDetailImg = (dir) => {
+            if (!window.activeItemImages.length) return;
+            let nw = window.activeItemImageIndex + dir;
+            if (nw < 0) nw = window.activeItemImages.length - 1;
+            if (nw >= window.activeItemImages.length) nw = 0;
+            window.setDetailImg(nw);
+        };
+
+        window.setDetailImg = (idx) => {
+            window.activeItemImageIndex = idx;
+            const m = document.getElementById('detail-main-img');
+            const c = document.getElementById('detail-img-counter');
+            if (m) m.src = window.activeItemImages[idx];
+            if (c) c.innerText = idx + 1;
+
+            document.querySelectorAll('.detail-thumb').forEach((el, i) => {
+                if (i === idx) {
+                    el.classList.add('border-blue-600', 'opacity-100', 'shadow-md', 'shadow-blue-200');
+                    el.classList.remove('border-transparent', 'opacity-50');
+                } else {
+                    el.classList.remove('border-blue-600', 'opacity-100', 'shadow-md', 'shadow-blue-200');
+                    el.classList.add('border-transparent', 'opacity-50');
+                }
+            });
+        };
+        window.viewDetail = viewDetail; // Make accessible globally for map popups
+        window.requestSold = requestSold;
+
+        const showOnMap = (lat, lng, label) => {
+            closeModal();
+            mapFocus = { lat, lng, label };
+            navigate('map');
+        };
+
+        // ====== TELEGRAM BOT MODULE ======
+        const TG_TOKEN = '8608649383:AAGIzrz9OzzTzlr2-x9pcgi-o-GL0Cysy_A';
+        const K_TG = 'u_tg_settings';
+        let tgSettings = JSON.parse(localStorage.getItem(K_TG)) || {
+            groups: [],
+            selectedListings: [],
+            intervalHours: 2,
+            active: false,
+            lastSentAt: null,
+            sendIndex: 0
+        };
+        const saveTg = () => localStorage.setItem(K_TG, JSON.stringify(tgSettings));
+
+        let tgSchedulerTimer = null;
+
+        const tgApiCall = async (method, params = {}) => {
+            const url = `https://api.telegram.org/bot${TG_TOKEN}/${method}`;
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                return await res.json();
+            } catch (e) {
+                return { ok: false, description: e.message };
+            }
+        };
+
+        const formatListingMessage = (item) => {
+            return `🏠 *${item.type || 'Uy'} — ${item.category}*
+
+📍 *Manzil:* ${item.addressText || 'Ko\'rsatilmagan'}
+💰 *Narx:* ${money(item.price, item.currency)}
+🚪 *Xonalar:* ${item.rooms} xona
+📐 *Maydon:* ${item.area} m²${item.desc ? `\n\n📝 ${item.desc}` : ''}`;
+        };
+
+        // Convert base64 dataURL to Blob for multipart upload
+        const base64ToBlob = (dataUrl) => {
+            const [meta, data] = dataUrl.split(',');
+            const mime = meta.match(/:(.*?);/)[1];
+            const bytes = atob(data);
+            const arr = new Uint8Array(bytes.length);
+            for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        };
+
+        const sendListingToGroups = async (item) => {
+            if (!item) return false;
+            let allOk = true;
+            for (const grp of tgSettings.groups) {
+                const msg = formatListingMessage(item);
+                const images = item.images || [];
+
+                if (images.length > 1) {
+                    try {
+                        const form = new FormData();
+                        form.append('chat_id', grp.id);
+                        const mediaArray = [];
+
+                        // Telegram API limits media group to 10 items maximum
+                        const tgImages = images.slice(0, 10);
+
+                        tgImages.forEach((imgBase64, index) => {
+                            const blob = base64ToBlob(imgBase64);
+                            form.append(`photo${index}`, blob, `photo${index}.jpg`);
+                            mediaArray.push({
+                                type: 'photo',
+                                media: `attach://photo${index}`,
+                                // Only attach caption to the first image of the album
+                                ...(index === 0 ? { caption: msg, parse_mode: 'Markdown' } : {})
+                            });
+                        });
+
+                        form.append('media', JSON.stringify(mediaArray));
+
+                        const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMediaGroup`, {
+                            method: 'POST',
+                            body: form
+                        });
+                        const r = await res.json();
+                        if (!r.ok) {
+                            // in case media group fails, send as text
+                            const r2 = await tgApiCall('sendMessage', { chat_id: grp.id, text: msg, parse_mode: 'Markdown' });
+                            if (!r2.ok) allOk = false;
+                        }
+                    } catch (e) {
+                        const r2 = await tgApiCall('sendMessage', { chat_id: grp.id, text: msg, parse_mode: 'Markdown' });
+                        if (!r2.ok) allOk = false;
+                    }
+                } else if (images.length === 1) {
+                    try {
+                        // Send single photo
+                        const blob = base64ToBlob(images[0]);
+                        const form = new FormData();
+                        form.append('chat_id', grp.id);
+                        form.append('photo', blob, 'photo.jpg');
+                        form.append('caption', msg);
+                        form.append('parse_mode', 'Markdown');
+                        const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendPhoto`, {
+                            method: 'POST',
+                            body: form
+                        });
+                        const r = await res.json();
+                        if (!r.ok) {
+                            const r2 = await tgApiCall('sendMessage', { chat_id: grp.id, text: msg, parse_mode: 'Markdown' });
+                            if (!r2.ok) allOk = false;
+                        }
+                    } catch (e) {
+                        const r2 = await tgApiCall('sendMessage', { chat_id: grp.id, text: msg, parse_mode: 'Markdown' });
+                        if (!r2.ok) allOk = false;
+                    }
+                } else {
+                    // No images
+                    const r = await tgApiCall('sendMessage', { chat_id: grp.id, text: msg, parse_mode: 'Markdown' });
+                    if (!r.ok) allOk = false;
+                }
+            }
+            return allOk;
+        };
+
+        const runScheduledSend = async () => {
+            if (!tgSettings.active) return;
+            if (tgSettings.selectedListings.length === 0) return;
+            if (tgSettings.groups.length === 0) return;
+
+            const idx = tgSettings.sendIndex % tgSettings.selectedListings.length;
+            const listingId = tgSettings.selectedListings[idx];
+            const item = listings.find(l => l.id === listingId);
+
+            if (item) {
+                const ok = await sendListingToGroups(item);
+                tgSettings.sendIndex++;
+                tgSettings.lastSentAt = new Date().toISOString();
+                saveTg();
+                if (curPage === 'telegram') renderTelegramBot(document.getElementById('main-content'), document.getElementById('header-actions'));
+                if (ok) toast(`"${item.addressText}" Telegram guruhlariga yuborildi`, 'success');
+                else toast('Ba\'zi guruhlariga yuborishda xatolik', 'error');
+            } else {
+                // listing removed, skip
+                tgSettings.sendIndex++;
+                saveTg();
+            }
+        };
+
+        const startTgScheduler = () => {
+            if (tgSchedulerTimer) clearInterval(tgSchedulerTimer);
+            if (!tgSettings.active) return;
+            const ms = tgSettings.intervalHours * 60 * 60 * 1000;
+            tgSchedulerTimer = setInterval(runScheduledSend, ms);
+        };
+
+        const renderTelegramBot = (con, act) => {
+            if (currentUser.role !== 'admin') {
+                con.innerHTML = `<div class="h-64 flex items-center justify-center text-slate-300 font-bold text-xl">Faqat admin uchun</div>`;
+                return;
+            }
+
+            const selListingIds = new Set(tgSettings.selectedListings);
+            const statusColor = tgSettings.active ? 'bg-emerald-500' : 'bg-slate-300';
+            const statusText = tgSettings.active ? 'FAOL' : 'TO\'XTATILGAN';
+
+            con.innerHTML = `
+            <div class="space-y-8">
+
+                <!-- Status Banner -->
+                <div class="flex items-center gap-6 bg-white rounded-[28px] p-6 soft-shadow border border-slate-50">
+                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl" style="background:linear-gradient(135deg,#0088cc22,#0088cc44)">
+                        <i class="fa-brands fa-telegram" style="color:#0088cc"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-xl font-black text-slate-900">Telegram Bot</h3>
+                        <p class="text-sm font-medium text-slate-400">Guruh va kanallarga avtomatik uy e'lonlari yuborish</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-white text-xs font-black ${statusColor}">
+                            <span class="w-2 h-2 bg-white rounded-full ${tgSettings.active ? 'animate-pulse' : ''}"></span>
+                            ${statusText}
+                        </span>
+                        ${tgSettings.lastSentAt ? `<span class="text-xs font-bold text-slate-400">Oxirgi: ${dt(tgSettings.lastSentAt)}</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    <!-- LEFT: Groups + Interval + Controls -->
+                    <div class="space-y-6">
+
+                        <!-- Add Group/Channel -->
+                        <div class="bg-white rounded-[28px] p-8 soft-shadow border border-slate-50">
+                            <h4 class="text-base font-black text-slate-900 mb-6 flex items-center gap-2">
+                                <i class="fa-solid fa-users-rectangle text-blue-500"></i> Guruh / Kanal qo'shish
+                            </h4>
+                            <p class="text-xs font-bold text-slate-400 mb-4 bg-blue-50 p-3 rounded-xl leading-relaxed">
+                                <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i>
+                                Botni guruh yoki kanalga admin qilib qo'shing. Keyin chat ID sini kiriting.
+                                Masalan: <code class="bg-white px-1 rounded">-1001234567890</code>
+                            </p>
+                            <div class="flex gap-3 mb-4">
+                                <input type="text" id="tg-group-id" placeholder="Chat ID: -100123456789" class="flex-1 h-12 bg-slate-50 border-none rounded-xl px-4 font-bold text-sm focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="tg-group-name" placeholder="Guruh nomi" class="flex-1 h-12 bg-slate-50 border-none rounded-xl px-4 font-bold text-sm focus:ring-2 focus:ring-blue-500">
+                                <button onclick="tgAddGroup()" class="h-12 w-12 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="space-y-3">
+                                ${tgSettings.groups.length === 0 ? `<div class="text-center py-6 text-slate-300 text-sm font-bold"><i class="fa-solid fa-inbox text-2xl mb-2 block"></i>Hali guruh qo'shilmagan</div>` : ''}
+                                ${tgSettings.groups.map(g => `
+                                    <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm" style="background:linear-gradient(135deg,#0088cc,#0055aa)">
+                                            <i class="fa-brands fa-telegram"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-black text-slate-900 text-sm truncate">${g.name}</p>
+                                            <p class="text-[10px] font-bold text-slate-400">${g.id}</p>
+                                        </div>
+                                        <button onclick="tgRemoveGroup('${g.id}')" class="w-9 h-9 bg-red-50 text-red-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+                                            <i class="fa-solid fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Interval & Controls -->
+                        <div class="bg-white rounded-[28px] p-8 soft-shadow border border-slate-50">
+                            <h4 class="text-base font-black text-slate-900 mb-6 flex items-center gap-2">
+                                <i class="fa-solid fa-clock text-purple-500"></i> Yuborish oralig'i
+                            </h4>
+                            <div class="flex items-center gap-4 mb-6">
+                                <input type="number" id="tg-interval" min="1" max="168" value="${tgSettings.intervalHours}"
+                                    class="w-28 h-14 bg-slate-50 border-none rounded-2xl px-5 font-black text-2xl text-purple-600 text-center focus:ring-2 focus:ring-purple-500" oninput="tgUpdateInterval()">
+                                <div>
+                                    <p class="font-black text-slate-900">soatda bir marta</p>
+                                    <p class="text-xs font-bold text-slate-400">Har <span id="tg-interval-display">${tgSettings.intervalHours}</span> soatda tanlangan uylar ketma-ket yuboriladi</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mb-6">
+                                ${[1, 2, 3, 4, 6, 12].map(h => `
+                                    <button onclick="tgSetInterval(${h})" class="h-10 rounded-xl text-sm font-black transition-all ${tgSettings.intervalHours === h ? 'bg-purple-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-purple-50'}"> ${h} soat</button>
+                                `).join('')}
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="tgSendNow()" class="flex-1 h-14 bg-slate-100 text-slate-700 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-slate-200 transition-all">
+                                    <i class="fa-solid fa-paper-plane"></i> Hozir yuborish
+                                </button>
+                                <button onclick="tgToggleActive()" class="flex-[1.5] h-14 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-lg ${tgSettings.active ? 'bg-red-500 text-white shadow-red-100 hover:bg-red-600' : 'bg-emerald-500 text-white shadow-emerald-100 hover:bg-emerald-600'}">
+                                    <i class="fa-solid ${tgSettings.active ? 'fa-stop' : 'fa-play'}"></i> ${tgSettings.active ? 'To\'xtatish' : 'Ishga tushurish'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Listing Selection -->
+                    <div class="bg-white rounded-[28px] p-8 soft-shadow border border-slate-50">
+                        <div class="flex items-center justify-between mb-6">
+                            <h4 class="text-base font-black text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-house text-emerald-500"></i> Yuborish uchun uylar
+                            </h4>
+                            <div class="flex gap-2">
+                                <button onclick="tgSelectAll()" class="h-8 px-3 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black hover:bg-emerald-100 transition-all">Hammasi</button>
+                                <button onclick="tgDeselectAll()" class="h-8 px-3 bg-slate-100 text-slate-500 rounded-xl text-xs font-black hover:bg-slate-200 transition-all">Bekor</button>
+                            </div>
+                        </div>
+                        <p class="text-xs font-bold text-slate-400 mb-4">${tgSettings.selectedListings.length} ta tanlangan / ${listings.length} ta mavjud</p>
+                        <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1 scroll-hide">
+                            ${listings.length === 0 ? `<div class="text-center py-8 text-slate-300 font-bold"><i class="fa-solid fa-house-circle-xmark text-3xl mb-2 block"></i>Sotuvdagi uy yo'q</div>` : ''}
+                            ${listings.map(item => `
+                                <label class="flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all ${selListingIds.has(item.id) ? 'bg-emerald-50 border-2 border-emerald-200' : 'bg-slate-50 border-2 border-transparent hover:border-slate-200'}">
+                                    <input type="checkbox" class="w-5 h-5 rounded accent-emerald-500" ${selListingIds.has(item.id) ? 'checked' : ''}
+                                        onchange="tgToggleListing('${item.id}', this.checked)">
+                                    <div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100">
+                                        ${item.images?.length > 0 ? `<img src="${item.images[0]}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i class="fa-solid fa-image"></i></div>`}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-black text-slate-900 text-sm truncate">${item.addressText || 'Manzil yo\'q'}</p>
+                                        <p class="text-xs font-bold text-blue-600 mt-0.5">${money(item.price, item.currency)}</p>
+                                        <p class="text-[10px] font-bold text-slate-400">${item.type || 'Hovli'} · ${item.rooms} xona · ${item.area}m²</p>
+                                    </div>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="bg-white rounded-[28px] p-8 soft-shadow border border-slate-50">
+                    <h4 class="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-blue-500"></i> Statistika
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 p-5 rounded-2xl text-center">
+                            <p class="text-3xl font-black text-blue-600">${tgSettings.groups.length}</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Guruhlar</p>
+                        </div>
+                        <div class="bg-emerald-50 p-5 rounded-2xl text-center">
+                            <p class="text-3xl font-black text-emerald-600">${tgSettings.selectedListings.length}</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Tanlangan uylar</p>
+                        </div>
+                        <div class="bg-purple-50 p-5 rounded-2xl text-center">
+                            <p class="text-3xl font-black text-purple-600">${tgSettings.intervalHours}h</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Interval</p>
+                        </div>
+                        <div class="bg-slate-50 p-5 rounded-2xl text-center">
+                            <p class="text-3xl font-black text-slate-700">${tgSettings.sendIndex}</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Yuborilgan</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>`;
+        };
+
+        // Telegram Bot Actions
+        window.tgAddGroup = async () => {
+            const idVal = document.getElementById('tg-group-id')?.value?.trim();
+            const nameVal = document.getElementById('tg-group-name')?.value?.trim();
+            if (!idVal) return toast('Chat ID kiriting!', 'error');
+            if (!nameVal) return toast('Guruh nomini kiriting!', 'error');
+            if (tgSettings.groups.find(g => g.id === idVal)) return toast('Bu guruh allaqachon qo\'shilgan', 'error');
+
+            toggleLoader(true);
+            // Verify the chat exists
+            const r = await tgApiCall('getChat', { chat_id: idVal });
+            toggleLoader(false);
+
+            if (!r.ok) {
+                return toast(`Xatolik: ${r.description || 'Guruh topilmadi. Bot admin ekanligini tekshiring.'}`, 'error');
+            }
+            const chatTitle = r.result?.title || nameVal;
+            tgSettings.groups.push({ id: idVal, name: chatTitle || nameVal });
+            saveTg();
+            toast(`"${chatTitle}" qo\'shildi!`, 'success');
+            renderTelegramBot(document.getElementById('main-content'), document.getElementById('header-actions'));
+        };
+
+        window.tgRemoveGroup = (id) => {
+            if (!confirm('Bu guruhni olib tashlamoqchimisiz?')) return;
+            tgSettings.groups = tgSettings.groups.filter(g => g.id !== id);
+            saveTg();
+            renderTelegramBot(document.getElementById('main-content'), document.getElementById('header-actions'));
+        };
+
+        window.tgToggleListing = (id, checked) => {
+            if (checked) {
+                if (!tgSettings.selectedListings.includes(id)) tgSettings.selectedListings.push(id);
+            } else {
+                tgSettings.selectedListings = tgSettings.selectedListings.filter(x => x !== id);
+            }
+            saveTg();
+            // update count display
+            const el = document.querySelector('[class*="ta tanlangan"]');
+            if (el) el.textContent = `${tgSettings.selectedListings.length} ta tanlangan / ${listings.length} ta mavjud`;
+        };
+
+        window.tgSelectAll = () => {
+            tgSettings.selectedListings = listings.map(l => l.id);
+            saveTg();
+            renderTelegramBot(document.getElementById('main-content'), document.getElementById('header-actions'));
+        };
+
+        window.tgDeselectAll = () => {
+            tgSettings.selectedListings = [];
+            saveTg();
+            renderTelegramBot(document.getElementById('main-content'), document.getElementById('header-actions'));
+        };
+
+        window.tgSetInterval = (h) => {
+            tgSettings.intervalHours = h;
+            saveTg();
+            if (tgSettings.active) startTgScheduler();
+            renderTelegramBot(document.getElementById('main-content'), document.getElementById('header-actions'));
+        };
+
+        window.tgUpdateInterval = () => {
+            const v = parseInt(document.getElementById('tg-interval')?.value);
+            if (!isNaN(v) && v >= 1) {
+                tgSettings.intervalHours = v;
+                saveTg();
+                const d = document.getElementById('tg-interval-display');
+                if (d) d.textContent = v;
+                if (tgSettings.active) startTgScheduler();
+            }
+        };
+
+        window.tgToggleActive = () => {
+            if (!tgSettings.active && tgSettings.groups.length === 0) return toast('Avval guruh yoki kanal qo\'shing!', 'error');
+            if (!tgSettings.active && tgSettings.selectedListings.length === 0) return toast('Avval yuborish uchun uylarni tanlang!', 'error');
+            tgSettings.active = !tgSettings.active;
+            saveTg();
+            startTgScheduler();
+            toast(tgSettings.active ? '✅ Bot ishga tushdi!' : '⏹️ Bot to\'xtatildi', tgSettings.active ? 'success' : 'info');
+            renderTelegramBot(document.getElementById('main-content'), document.getElementById('header-actions'));
+        };
+
+        window.tgSendNow = async () => {
+            if (tgSettings.groups.length === 0) return toast('Avval guruh yoki kanal qo\'shing!', 'error');
+            if (tgSettings.selectedListings.length === 0) return toast('Avval yuborish uchun uylarni tanlang!', 'error');
+            toggleLoader(true);
+            await runScheduledSend();
+            toggleLoader(false);
+        };
+
+        const init = () => {
+            if (!currentUser) return;
+
+            // Arxivdagi eski rasmlarni tozalash (xavfsizlik uchun)
+            if (archive.some(a => a.images && a.images.length > 0)) {
+                archive = archive.map(a => ({ ...a, images: [] }));
+                save();
+            }
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('sidebar-user-name').innerText = currentUser.name;
+            document.getElementById('sidebar-user-role').innerText = currentUser.role;
+            document.getElementById('user-avatar-text').innerText = currentUser.name[0];
+
+            const nav = document.getElementById('nav-links');
+            const mobileNav = document.getElementById('mobile-nav');
+            const navItems = pages[currentUser.role];
+
+            nav.innerHTML = navItems.map(p => `
+                <button onclick="navigate('${p.id}')" id="nav-${p.id}" class="nav-btn w-full h-14 flex items-center gap-4 px-6 rounded-2xl text-slate-500 transition-all font-bold">
+                    <i class="fa-solid ${p.icon} w-6 text-center"></i> <span>${p.label}</span>
+                </button>
+            `).join('');
+
+            mobileNav.innerHTML = navItems.slice(0, 4).map(p => `
+                <button onclick="navigate('${p.id}')" id="mobile-nav-${p.id}" class="mobile-nav-btn">
+                    <i class="fa-solid ${p.icon}"></i> <span>${p.label}</span>
+                </button>
+            `).join('');
+
+            navigate(navItems[0].id);
+        };
+
+        window.onload = async () => { 
+            if(currentUser) await loadDataFromSupabase();
+            init(); 
+            if (tgSettings.active && currentUser && currentUser.role === 'admin') startTgScheduler(); 
+        };
+    </script>
+</body>
+
+</html>
