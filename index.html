@@ -424,7 +424,7 @@
         // State
         let users = [];
 
-let listings = [];
+        let listings = [];
         let archive = [];
         let requests = [];
         let currentUser = JSON.parse(sessionStorage.getItem('u_session')) || null;
@@ -454,18 +454,18 @@ let listings = [];
         const loadDataFromSupabase = async () => {
             toggleLoader(true);
             try {
-                let {data:u} = await supabaseClient.from('users').select('*');
-                if(u) users = u.map(x => ({id: x.id, username: x.username, password: x.password, name: x.name, role: x.role, phone: x.phone}));
-                
-                let {data:l} = await supabaseClient.from('listings').select('*');
-                if(l) {
-                    listings = l.filter(x => x.status === 'active').map(x => ({id: x.id, maklerId: x.makler_id, category: x.category, type: x.type, addressText: x.address_text, price: x.price, currency: x.currency, rooms: x.rooms, area: x.area, desc: x.desc_text, loc: {lat: parseFloat(x.lat || 0), lng: parseFloat(x.lng || 0)}, images: x.images || [], createdAt: x.created_at}));
-                    archive = l.filter(x => x.status === 'sold').map(x => ({id: x.id, maklerId: x.makler_id, category: x.category, type: x.type, addressText: x.address_text, price: x.price, currency: x.currency, rooms: x.rooms, area: x.area, desc: x.desc_text, loc: {lat: parseFloat(x.lat || 0), lng: parseFloat(x.lng || 0)}, images: x.images || [], createdAt: x.created_at, soldAt: x.sold_at}));
+                let { data: u } = await supabaseClient.from('users').select('*');
+                if (u) users = u.map(x => ({ id: x.id, username: x.username, password: x.password, name: x.name, role: x.role, phone: x.phone }));
+
+                let { data: l } = await supabaseClient.from('listings').select('*');
+                if (l) {
+                    listings = l.filter(x => x.status === 'active').map(x => ({ id: x.id, maklerId: x.makler_id, category: x.category, type: x.type, addressText: x.address_text, price: x.price, currency: x.currency, rooms: x.rooms, area: x.area, desc: x.desc_text, loc: { lat: parseFloat(x.lat || 0), lng: parseFloat(x.lng || 0) }, images: x.images || [], createdAt: x.created_at }));
+                    archive = l.filter(x => x.status === 'sold').map(x => ({ id: x.id, maklerId: x.makler_id, category: x.category, type: x.type, addressText: x.address_text, price: x.price, currency: x.currency, rooms: x.rooms, area: x.area, desc: x.desc_text, loc: { lat: parseFloat(x.lat || 0), lng: parseFloat(x.lng || 0) }, images: x.images || [], createdAt: x.created_at, soldAt: x.sold_at }));
                 }
-                
-                let {data:r} = await supabaseClient.from('requests').select('*');
-                if(r) requests = r.map(x => ({id: x.id, listingId: x.listing_id, maklerId: x.makler_id, status: x.status, date: x.created_at}));
-            } catch(e) { console.error(e); }
+
+                let { data: r } = await supabaseClient.from('requests').select('*');
+                if (r) requests = r.map(x => ({ id: x.id, listingId: x.listing_id, maklerId: x.makler_id, status: x.status, date: x.created_at }));
+            } catch (e) { console.error(e); }
             toggleLoader(false);
         };
 
@@ -478,7 +478,7 @@ let listings = [];
             const pInput = document.getElementById('login-password').value;
             const { data: u } = await supabaseClient.from('users').select('*').eq('username', uInput).eq('password', pInput).single();
             if (u) {
-                currentUser = {id: u.id, username: u.username, password: u.password, name: u.name, role: u.role, phone: u.phone};
+                currentUser = { id: u.id, username: u.username, password: u.password, name: u.name, role: u.role, phone: u.phone };
                 sessionStorage.setItem('u_session', JSON.stringify(currentUser));
                 await loadDataFromSupabase();
                 init();
@@ -684,24 +684,71 @@ let listings = [];
         const renderMaklers = (con, act) => {
             if (currentUser.role !== 'admin') return;
             act.innerHTML = `<button onclick="openMaklerModal()" class="h-12 bg-blue-600 text-white px-6 rounded-2xl font-bold shadow-lg shadow-blue-100 flex items-center gap-2"><i class="fa-solid fa-user-plus"></i></button>`;
-            const mList = users.filter(u => u.role === 'makler');
-            con.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                ${mList.map(m => `
-                    <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 relative group">
-                        <div class="flex items-center gap-4 mb-8">
-                            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-2xl font-black">${m.name[0]}</div>
-                            <div><h4 class="font-black text-slate-900 text-lg">${m.name}</h4><p class="text-xs font-bold text-slate-400">@${m.username}</p></div>
-                        </div>
-                        <div class="space-y-4 mb-4">
-                            <div class="flex justify-between text-sm"><span class="text-slate-400 font-bold">Telefon:</span><span class="font-black text-slate-900">${m.phone || '-'}</span></div>
-                            <div class="flex justify-between text-sm"><span class="text-slate-400 font-bold">Sotuvlar:</span><span class="font-black text-emerald-500">${archive.filter(a => a.maklerId === m.id).length} ta</span></div>
-                        </div>
-                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="openMaklerModal('${m.id}')" class="flex-1 h-10 bg-slate-50 text-slate-500 rounded-xl font-bold text-xs">Tahrirlash</button>
-                            <button onclick="deleteUser('${m.id}')" class="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
-                        </div>
+
+            con.innerHTML = `
+                <div class="bg-white p-6 rounded-[32px] border border-slate-50 mb-8 flex flex-wrap gap-4 items-end soft-shadow">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest px-1">Sana dan</label>
+                        <input type="date" id="m-date-from" onchange="renderMaklersList()" class="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-blue-500">
                     </div>
-                `).join('')}
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest px-1">Sana gacha</label>
+                        <input type="date" id="m-date-to" onchange="renderMaklersList()" class="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button onclick="resetMaklerDates()" class="h-12 bg-slate-100 text-slate-500 px-6 rounded-xl font-bold hover:bg-slate-200 transition-all">Tozalash</button>
+                </div>
+                <div id="maklers-list-container"></div>
+            `;
+            renderMaklersList();
+        };
+
+        const resetMaklerDates = () => {
+            document.getElementById('m-date-from').value = '';
+            document.getElementById('m-date-to').value = '';
+            renderMaklersList();
+        };
+
+        const renderMaklersList = () => {
+            const container = document.getElementById('maklers-list-container');
+            if (!container) return;
+
+            const dateFrom = document.getElementById('m-date-from').value;
+            const dateTo = document.getElementById('m-date-to').value;
+
+            const mList = users.filter(u => u.role === 'makler');
+
+            container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                ${mList.map(m => {
+                let filteredArchive = archive.filter(a => a.maklerId === m.id);
+
+                if (dateFrom) {
+                    const from = new Date(dateFrom);
+                    from.setHours(0, 0, 0, 0);
+                    filteredArchive = filteredArchive.filter(a => new Date(a.soldAt) >= from);
+                }
+                if (dateTo) {
+                    const to = new Date(dateTo);
+                    to.setHours(23, 59, 59, 999);
+                    filteredArchive = filteredArchive.filter(a => new Date(a.soldAt) <= to);
+                }
+
+                return `
+                        <div class="bg-white p-8 rounded-[32px] soft-shadow border border-slate-50 relative group">
+                            <div class="flex items-center gap-4 mb-8">
+                                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-2xl font-black">${m.name[0]}</div>
+                                <div><h4 class="font-black text-slate-900 text-lg">${m.name}</h4><p class="text-xs font-bold text-slate-400">@${m.username}</p></div>
+                            </div>
+                            <div class="space-y-4 mb-4">
+                                <div class="flex justify-between text-sm"><span class="text-slate-400 font-bold">Telefon:</span><span class="font-black text-slate-900">${m.phone || '-'}</span></div>
+                                <div class="flex justify-between text-sm"><span class="text-slate-400 font-bold">Sotuvlar:</span><span class="font-black text-emerald-500">${filteredArchive.length} ta</span></div>
+                            </div>
+                            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="openMaklerModal('${m.id}')" class="flex-1 h-10 bg-slate-50 text-slate-500 rounded-xl font-bold text-xs">Tahrirlash</button>
+                                <button onclick="deleteUser('${m.id}')" class="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+            }).join('')}
             </div>`;
         };
 
@@ -889,7 +936,7 @@ let listings = [];
                 await supabaseClient.from('users').update(data).eq('id', id);
             } else {
                 const { data: exist } = await supabaseClient.from('users').select('id').eq('username', data.username);
-                if(exist && exist.length > 0) { toast('Username band', 'error'); toggleLoader(false); return; }
+                if (exist && exist.length > 0) { toast('Username band', 'error'); toggleLoader(false); return; }
                 await supabaseClient.from('users').insert([data]);
             }
             await loadDataFromSupabase();
@@ -989,7 +1036,7 @@ let listings = [];
                 lat: pLoc.lat, lng: pLoc.lng, address_text: document.getElementById('l-address').value,
                 price: document.getElementById('l-price').value, currency: document.getElementById('l-curr').value,
                 category: document.getElementById('l-cat').value, type: document.getElementById('l-type').value,
-                rooms: document.getElementById('l-rooms').value, area: document.getElementById('l-area').value, 
+                rooms: document.getElementById('l-rooms').value, area: document.getElementById('l-area').value,
                 images: uploadImgs, desc_text: document.getElementById('l-desc').value
             };
 
@@ -1013,11 +1060,25 @@ let listings = [];
 
         const requestSold = async (id) => {
             if (currentUser.role === 'admin') {
-                if (confirm('Ushbu uyni sotilgan deb belgilaysizmi?')) {
-                    toggleLoader(true);
-                    await supabaseClient.from('listings').update({ status: 'sold', sold_at: new Date().toISOString(), images: [] }).eq('id', id);
-                    await loadDataFromSupabase(); toast('Sotildi', 'success'); render(curPage);
-                }
+                const brokers = users.filter(u => u.role === 'makler');
+                showModal(`
+                    <div class="p-8">
+                        <h3 class="text-xl font-black mb-6">Ushbu uyni kim sotdi?</h3>
+                        <div class="space-y-3 max-h-96 overflow-y-auto pr-2 scroll-hide">
+                            <button onclick="confirmAdminSale('${id}', '${currentUser.id}')" class="w-full h-14 bg-slate-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-100 rounded-2xl font-bold text-left px-5 flex items-center justify-between transition-all group">
+                                <span class="group-hover:text-blue-600 text-slate-700">Admin (O'zim)</span> 
+                                <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-blue-500"></i>
+                            </button>
+                            ${brokers.map(b => `
+                                <button onclick="confirmAdminSale('${id}', '${b.id}')" class="w-full h-14 bg-slate-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-100 rounded-2xl font-bold text-left px-5 flex items-center justify-between transition-all group">
+                                    <span class="group-hover:text-blue-600 text-slate-700">${b.name}</span> 
+                                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-blue-500"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                        <button onclick="closeModal()" class="w-full h-14 mt-6 text-slate-400 font-bold hover:text-slate-600 transition-all">Bekor qilish</button>
+                    </div>
+                `);
             } else {
                 if (confirm('Sotilganini tasdiqlash uchun adminga so\'rov yuborilsinmi?')) {
                     toggleLoader(true);
@@ -1027,10 +1088,50 @@ let listings = [];
             }
         };
 
+        window.confirmAdminSale = async (id, mid) => {
+            toggleLoader(true);
+            await supabaseClient.from('listings').update({ status: 'sold', sold_at: new Date().toISOString(), images: [], makler_id: mid }).eq('id', id);
+            await loadDataFromSupabase(); 
+            closeModal();
+            toast('Sotildi va sotuvchi biriktirildi', 'success'); 
+            render(curPage);
+        };
+
+        window.changeSoldBy = async (id) => {
+            const brokers = users.filter(u => u.role === 'makler');
+            showModal(`
+                <div class="p-8">
+                    <h3 class="text-xl font-black mb-6">Sotuvchini o'zgartirish</h3>
+                    <div class="space-y-3 max-h-96 overflow-y-auto pr-2 scroll-hide">
+                        <button onclick="updateConfirmSoldBy('${id}', '${currentUser.id}')" class="w-full h-14 bg-slate-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-100 rounded-2xl font-bold text-left px-5 flex items-center justify-between transition-all group">
+                            <span class="group-hover:text-blue-600 text-slate-700">Admin</span> 
+                            <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-blue-500"></i>
+                        </button>
+                        ${brokers.map(b => `
+                            <button onclick="updateConfirmSoldBy('${id}', '${b.id}')" class="w-full h-14 bg-slate-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-100 rounded-2xl font-bold text-left px-5 flex items-center justify-between transition-all group">
+                                <span class="group-hover:text-blue-600 text-slate-700">${b.name}</span> 
+                                <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-blue-500"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <button onclick="closeModal()" class="w-full h-14 mt-6 text-slate-400 font-bold">Bekor qilish</button>
+                </div>
+            `);
+        };
+
+        window.updateConfirmSoldBy = async (id, mid) => {
+            toggleLoader(true);
+            await supabaseClient.from('listings').update({ makler_id: mid }).eq('id', id);
+            await loadDataFromSupabase(); 
+            closeModal();
+            toast('Sotuvchi muvaffaqiyatli o\'zgartirildi', 'success'); 
+            render(curPage);
+        };
+
         const approveSale = async (rid) => {
             const req = requests.find(r => r.id === rid);
             toggleLoader(true);
-            if(req) await supabaseClient.from('listings').update({ status: 'sold', sold_at: new Date().toISOString(), images: [] }).eq('id', req.listingId);
+            if (req) await supabaseClient.from('listings').update({ status: 'sold', sold_at: new Date().toISOString(), images: [], makler_id: req.maklerId }).eq('id', req.listingId);
             await supabaseClient.from('requests').delete().eq('id', rid);
             await loadDataFromSupabase(); toast('Sotuv tasdiqlandi', 'success'); render('requests');
         };
@@ -1087,6 +1188,7 @@ let listings = [];
                         </div>
                         <div class="flex flex-col sm:flex-row gap-4 mt-10">
                             ${!archiveMode ? `<button onclick="window.requestSold('${itm.id}')" class="flex-1 h-16 bg-emerald-500 text-white rounded-[28px] font-black shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"><i class="fa-solid fa-dollar-sign text-xl"></i> Sotilgan deb belgilash</button>` : ''}
+                            ${archiveMode && currentUser.role === 'admin' ? `<button onclick="window.changeSoldBy('${itm.id}')" class="flex-1 h-16 bg-amber-500 text-white rounded-[28px] font-black shadow-lg shadow-amber-100 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"><i class="fa-solid fa-user-pen text-xl"></i> Sotuvchini tuzatish</button>` : ''}
                             <button onclick="showOnMap(${itm.loc.lat}, ${itm.loc.lng}, '${itm.addressText || ''}')" class="flex-1 h-16 bg-blue-600 text-white rounded-[28px] font-black shadow-lg shadow-blue-100 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"><i class="fa-solid fa-map-location-dot text-xl"></i> Xaritada ko'rish</button>
                             <button onclick="window.closeModal()" class="flex-1 h-16 bg-slate-100 text-slate-500 rounded-[28px] font-black hover:bg-slate-200 transition-all">Yopish</button>
                         </div>
@@ -1567,10 +1669,10 @@ let listings = [];
             navigate(navItems[0].id);
         };
 
-        window.onload = async () => { 
-            if(currentUser) await loadDataFromSupabase();
-            init(); 
-            if (tgSettings.active && currentUser && currentUser.role === 'admin') startTgScheduler(); 
+        window.onload = async () => {
+            if (currentUser) await loadDataFromSupabase();
+            init();
+            if (tgSettings.active && currentUser && currentUser.role === 'admin') startTgScheduler();
         };
     </script>
 </body>
